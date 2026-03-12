@@ -1,10 +1,85 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:online_perfume_app_fyp/views/recommendation.dart';
 
 
-class Onboarding extends StatelessWidget {
+class Onboarding extends StatefulWidget {
   const Onboarding({super.key});
+
+  @override
+  State<Onboarding> createState() => _OnboardingState();
+}
+
+class _OnboardingState extends State<Onboarding>
+    with SingleTickerProviderStateMixin {
+
+  bool _isLoading = true;
+  late AnimationController _shimmerController;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Shimmer animation controller
+    _shimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
+
+     //After 5 seconds: stop loader & navigate
+    Timer(const Duration(seconds: 5), () {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => Recommendation()),
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _shimmerController.dispose();
+    super.dispose();
+  }
+
+  // ── Shimmer box
+  Widget _shimmerBox({required double width, required double height}) {
+    return AnimatedBuilder(
+      animation: _shimmerController,
+      builder: (_, __) {
+        return Container(
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            gradient: LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: const [
+                Color(0xFFDDA0A8),
+                Color(0xFFEFC5C9),
+                Color(0xFFFFE0E4),
+                Color(0xFFEFC5C9),
+                Color(0xFFDDA0A8),
+              ],
+              stops: [
+                0.0,
+                (_shimmerController.value - 0.3).clamp(0.0, 1.0),
+                _shimmerController.value.clamp(0.0, 1.0),
+                (_shimmerController.value + 0.3).clamp(0.0, 1.0),
+                1.0,
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,12 +89,6 @@ class Onboarding extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         systemOverlayStyle: SystemUiOverlayStyle.dark,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xff5E1D04),),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
         title: const Text(
           'Onboarding',
           style: TextStyle(
@@ -35,7 +104,7 @@ class Onboarding extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 30),
+              const SizedBox(height: 15),
 
               ClipRRect(
                 borderRadius: BorderRadius.circular(20),
@@ -46,7 +115,7 @@ class Onboarding extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 40),
+              const SizedBox(height: 20),
 
               Text(
                 'Discover Your Perfect Scent',
@@ -58,93 +127,35 @@ class Onboarding extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
-              SizedBox(height: 30),
+
+              const SizedBox(height: 20),
 
               Text(
                 'Find your Fragrances tailored just for you with personalized recommendations',
                 style: GoogleFonts.inter(
                     fontSize: 20,
-                    fontWeight:FontWeight.w500 ,
-                    color: Color(0xff5E1D04)
-                ),
-                textAlign: TextAlign.center,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xff5E1D04)),
+                 textAlign: TextAlign.center,
               ),
 
               const SizedBox(height: 20),
 
-              // Simple dots indicator (for page 1 of onboarding)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildDot(isActive: true),
-                  _buildDot(isActive: false),
-                  _buildDot(isActive: false),
-                ],
-              ),
-              const SizedBox(height: 30),
-
-              // Bottom navigation placeholder (can move to persistent later)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: const [
-                  _NavItem(icon: Icons.home_rounded, label: 'Home', isActive: true),
-                  _NavItem(icon: Icons.search_rounded, label: 'Explore'),
-                  _NavItem(icon: Icons.shopping_cart_rounded, label: 'Cart'),
-                  _NavItem(icon: Icons.person_rounded, label: 'Profile'),
-                ],
-              ),
+              // ── Skeleton Loader
+              if (_isLoading)
+                Column(
+                  children: [
+                    _shimmerBox(width: 180, height: 10),
+                    const SizedBox(height: 8),
+                    _shimmerBox(width: 120, height: 10),
+                  ],
+                ),
 
               const SizedBox(height: 10),
             ],
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildDot({required bool isActive}) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 6),
-      width: isActive ? 24 : 10,
-      height: 10,
-      decoration: BoxDecoration(
-        color: isActive ? const Color(0xff5E1D04) : Color(0xff908A91),
-        borderRadius: BorderRadius.circular(5),
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isActive;
-
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    this.isActive = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          color: isActive ? const Color(0xFFFF6B81) : Colors.grey.shade600,
-          size: 26,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: isActive ? const Color(0xFFFF6B81) : Colors.grey.shade600,
-          ),
-        ),
-      ],
     );
   }
 }

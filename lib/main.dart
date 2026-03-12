@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:online_perfume_app_fyp/views/recommendation.dart';
 import 'package:online_perfume_app_fyp/views/splash-screen/splash_screen_1.dart';
+import 'package:online_perfume_app_fyp/views/splash-screen/splash_screen_2.dart';
 
 void main() {
   runApp(const MyApp());
@@ -31,7 +33,7 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: .fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: SplashScreen1(),
+      home: SplashScreen2(),
     );
   }
 }
