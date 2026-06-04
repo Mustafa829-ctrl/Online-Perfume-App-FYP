@@ -2,10 +2,9 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:online_perfume_app_fyp/services/cart_service.dart';
-import 'package:online_perfume_app_fyp/widgets/bottom_navigation_bar.dart';
 import 'package:online_perfume_app_fyp/views/buyer/order_confirmation_screen.dart';
-
-import 'package:online_perfume_app_fyp/widgets/checkout_widgets.dart';
+import 'package:online_perfume_app_fyp/views/buyer/widgets/bottom_navigation_bar.dart';
+import 'package:online_perfume_app_fyp/views/buyer/widgets/checkout_widgets.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -43,7 +42,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF1C8C6),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -160,7 +158,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xffF1C8C6),
+      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (_) => Padding(

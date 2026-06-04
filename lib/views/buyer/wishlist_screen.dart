@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:online_perfume_app_fyp/widgets/bottom_navigation_bar.dart';
-import 'package:online_perfume_app_fyp/widgets/wishlist_widgets.dart';
 import 'package:online_perfume_app_fyp/models/wishlist_item_model.dart';
 import 'package:online_perfume_app_fyp/services/wishlist_service.dart';
+import 'package:online_perfume_app_fyp/views/buyer/widgets/bottom_navigation_bar.dart';
+import 'package:online_perfume_app_fyp/views/buyer/widgets/wishlist_widgets.dart';
 
 class WishlistScreen extends StatefulWidget {
   const WishlistScreen({super.key});
@@ -16,7 +16,6 @@ class _WishlistScreenState extends State<WishlistScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF1C8C6),
       bottomNavigationBar: const CustomBottomNav(currentIndex: 1),
       body: SafeArea(
         child: ListenableBuilder(

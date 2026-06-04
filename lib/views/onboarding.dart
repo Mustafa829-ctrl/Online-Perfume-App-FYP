@@ -61,11 +61,7 @@ class _OnboardingState extends State<Onboarding>
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
               colors: const [
-                Color(0xFFDDA0A8),
-                Color(0xFFEFC5C9),
-                Color(0xFFFFE0E4),
-                Color(0xFFEFC5C9),
-                Color(0xFFDDA0A8),
+                Color(0xffFDF6EC),
               ],
               stops: [
                 0.0,
@@ -84,7 +80,6 @@ class _OnboardingState extends State<Onboarding>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffEFB4B9),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,

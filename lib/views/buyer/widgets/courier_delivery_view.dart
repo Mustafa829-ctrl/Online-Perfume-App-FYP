@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:online_perfume_app_fyp/widgets/delivery_widgets.dart';
 
+import 'delivery_widgets.dart';
 class CourierDeliveryView extends StatelessWidget {
   final Map<String, String> courier;
   final String deliveryAddress;

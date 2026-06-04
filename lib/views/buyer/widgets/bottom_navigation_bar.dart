@@ -45,22 +45,12 @@ class _CustomBottomNavState extends State<CustomBottomNav> {
         height: 72,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-            colors: [
-              Color(0xFFDDA0A8),
-              Color(0xFFEFC5C9),
-              Color(0xFFFFE0E4),
-              Color(0xFFEFC5C9),
-              Color(0xFFDDA0A8),
-            ],
-          ),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
-              color: Colors.black,
-              blurRadius: 20,
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 15,
               spreadRadius: 2,
               offset: const Offset(0, 4),
             ),

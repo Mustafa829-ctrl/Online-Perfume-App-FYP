@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:online_perfume_app_fyp/widgets/bottom_navigation_bar.dart';
-
+import 'package:online_perfume_app_fyp/views/buyer/widgets/bottom_navigation_bar.dart';
+import 'package:online_perfume_app_fyp/views/buyer/widgets/courier_delivery_view.dart';
+import 'package:online_perfume_app_fyp/views/buyer/widgets/rider_delivery_view.dart';
 // Import our new extracted view components
-import 'package:online_perfume_app_fyp/widgets/rider_delivery_view.dart';
-import 'package:online_perfume_app_fyp/widgets/courier_delivery_view.dart';
 
 class DeliveryTrackingScreen extends StatelessWidget {
   final String orderId;
@@ -48,7 +47,6 @@ class DeliveryTrackingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF1C8C6),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,

@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:online_perfume_app_fyp/views/admin/screens/admin_homescreen.dart';
 import 'package:online_perfume_app_fyp/views/buyer/buyer_homescreen.dart';
-import 'package:online_perfume_app_fyp/views/buyer/menu_bar.dart';
-import 'package:online_perfume_app_fyp/views/recommendation.dart';
-import 'package:online_perfume_app_fyp/views/splash-screen/splash_screen_1.dart';
-import 'package:online_perfume_app_fyp/views/splash-screen/splash_screen_2.dart';
+import 'package:online_perfume_app_fyp/views/seller/seller_homescreen.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:online_perfume_app_fyp/views/splash-screen/splash_screen_3.dart';
+import 'firebase_options.dart';
 
-void main() {
+void main() async{
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const MyApp());
 }
 
@@ -34,8 +39,9 @@ class MyApp extends StatelessWidget {
         // This works for code too, not just values: Most code changes can be
         // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        scaffoldBackgroundColor: Colors.white,
       ),
-      home: MenuBarScreen(),
+      home: AdminHomeScreen(),
     );
   }
 }

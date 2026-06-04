@@ -8,7 +8,7 @@ class ScentDiscoveryScreen extends StatefulWidget {
 }
 
 class _ScentDiscoveryScreenState extends State<ScentDiscoveryScreen> {
-  static const Color bgColor   = Color(0xFFFCE8E8);
+  static const Color bgColor   = Colors.white;
   static const Color darkBrown = Color(0xFF5C1A1A);
   static const Color goldColor = Color(0xFFCC8833);
 
@@ -38,7 +38,6 @@ class _ScentDiscoveryScreenState extends State<ScentDiscoveryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: bgColor,
       body: SafeArea(
         child: Column(
           children: [

@@ -70,7 +70,7 @@ class TallProductCard extends StatelessWidget {
       child: Container(
         height: 480, // Taller size
         decoration: BoxDecoration(
-          color: const Color(0xffF8E7E5), // Lighter background for card
+          color: Colors.white, // Lighter background for card
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -164,7 +164,7 @@ class SmallProductCard extends StatelessWidget {
       child: Container(
         height: 200, // Shorter size
         decoration: BoxDecoration(
-          color: const Color(0xffF8E7E5),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(

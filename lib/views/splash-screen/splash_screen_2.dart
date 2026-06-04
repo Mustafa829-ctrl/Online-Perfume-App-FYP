@@ -30,8 +30,8 @@ class _SplashScreen2State extends State<SplashScreen2> {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                const Color(0xffEFB4B9),
-                const Color(0xffDDD6D6),
+                const Color(0xffFDF6EC),
+                const Color(0xffFAF3E0),
               ],)
         ),
       ),

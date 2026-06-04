@@ -145,7 +145,7 @@ class OrderTimeline extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.6),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -279,7 +279,7 @@ class DeliveryAddressCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.6),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         border:
             Border.all(color: const Color(0xffD08C4A).withOpacity(0.4)),

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:online_perfume_app_fyp/widgets/bottom_navigation_bar.dart';
+import 'package:online_perfume_app_fyp/views/buyer/profile_screen.dart';
+import 'package:online_perfume_app_fyp/views/buyer/widgets/bottom_navigation_bar.dart';
+import 'package:online_perfume_app_fyp/views/buyer/widgets/buyer_homescreen_widgets.dart';
+import 'package:online_perfume_app_fyp/views/buyer/wishlist_screen.dart';
 import 'package:online_perfume_app_fyp/views/buyer/product_listing.dart';
-import 'package:online_perfume_app_fyp/widgets/buyer_homescreen_widgets.dart';
 
 class BuyerHomescreen extends StatefulWidget {
   const BuyerHomescreen({super.key});
@@ -60,11 +62,9 @@ class _BuyerHomescreenState extends State<BuyerHomescreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF1C8C6), // Light pink background
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: const Icon(Icons.menu_outlined, color: Color(0xff5E1D04)),
         title: Text(
           "Buyer Home",
           style: GoogleFonts.poppins(
@@ -75,14 +75,18 @@ class _BuyerHomescreenState extends State<BuyerHomescreen> {
         ),
         centerTitle: true,
       ),
+      // menu-bar
+
+      //drawer: customeDrawer(),
       bottomNavigationBar: const CustomBottomNav(currentIndex: 0),
       body: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 10),
-            
+
             // 1. Search Bar
             const HomeSearchBar(),
             const SizedBox(height: 20),
@@ -197,6 +201,95 @@ class _BuyerHomescreenState extends State<BuyerHomescreen> {
             ),
 
             const SizedBox(height: 30), // Bottom padding
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ProfileAvatar extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 72,
+      height: 72,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: const Color(0xFFE8A020),
+          width: 3,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFE8A020).withOpacity(0.45),
+            blurRadius: 10,
+            spreadRadius: 2,
+          ),
+        ],
+        image: const DecorationImage(
+          image: AssetImage('assets/images/Profile_photo.jpg'),
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
+  }
+}
+
+class _MenuItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String? badge;
+  final VoidCallback onTap;
+
+  const _MenuItem({
+    required this.icon,
+    required this.label,
+    this.badge,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF9D9D9),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: const Color(0xFF5C1A1A), size: 22),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF5C1A1A),
+                ),
+              ),
+            ),
+            if (badge != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF5C1A1A),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  badge!,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
           ],
         ),
       ),

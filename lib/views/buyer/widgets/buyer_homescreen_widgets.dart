@@ -4,34 +4,57 @@ import 'package:online_perfume_app_fyp/views/buyer/product_details.dart';
 import 'package:online_perfume_app_fyp/services/wishlist_service.dart';
 
 class HomeSearchBar extends StatelessWidget {
-  const HomeSearchBar({super.key});
+  final VoidCallback? onFilterTap;
+  const HomeSearchBar({super.key, this.onFilterTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xffF6B55E), // Orange/yellow
-        borderRadius: BorderRadius.circular(12),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          const Icon(Icons.search, color: Color(0xff5E1D04)),
-          const SizedBox(width: 10),
-          Expanded(
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: "Search product by name, brand or id",
-                hintStyle: GoogleFonts.poppins(
-                  color: const Color(0xff5E1D04),
-                  fontSize: 14,
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xffF6B55E), // Orange/yellow
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                const Icon(Icons.search, color: Color(0xff5E1D04)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: "Search product",
+                      hintStyle: GoogleFonts.poppins(
+                        color: const Color(0xff5E1D04),
+                        fontSize: 14,
+                      ),
+                      border: InputBorder.none,
+                    ),
+                  ),
                 ),
-                border: InputBorder.none,
-              ),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(width: 12),
+        GestureDetector(
+          onTap: onFilterTap,
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xff5E1D04),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.tune_rounded,
+              color: Color(0xffF6B55E),
+              size: 24,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -2,9 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:online_perfume_app_fyp/views/buyer/buyer_homescreen.dart';
-import 'package:online_perfume_app_fyp/widgets/bottom_navigation_bar.dart';
-
-import 'package:online_perfume_app_fyp/widgets/order_confirmation_widgets.dart';
+import 'package:online_perfume_app_fyp/views/buyer/widgets/bottom_navigation_bar.dart';
+import 'package:online_perfume_app_fyp/views/buyer/widgets/order_confirmation_widgets.dart';
 
 class OrderConfirmationScreen extends StatefulWidget {
   final String orderId;
@@ -89,7 +88,7 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen>
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xffF1C8C6),
+        backgroundColor: Colors.white,
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
@@ -151,7 +150,6 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen>
   // VIEW 1 – Waiting/Cancellable
   Widget _buildWaitingView() {
     return Scaffold(
-      backgroundColor: const Color(0xffF1C8C6),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -194,7 +192,7 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen>
             const SizedBox(height: 18),
 
             Text(
-              "Order Placed! 🎉",
+              "Order Placed!",
               style: GoogleFonts.playfairDisplay(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
@@ -281,7 +279,6 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen>
   // VIEW 2 – Confirmed (timer expired)
   Widget _buildConfirmedView() {
     return Scaffold(
-      backgroundColor: const Color(0xffF1C8C6),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,

@@ -9,7 +9,6 @@ class Recommendation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffEFB4B9),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,

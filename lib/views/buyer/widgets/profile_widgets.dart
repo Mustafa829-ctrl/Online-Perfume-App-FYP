@@ -125,7 +125,7 @@ class SettingsTile extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xffEFB4B9).withOpacity(0.4),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: const Color(0xff5E1D04).withOpacity(0.1)),
         ),

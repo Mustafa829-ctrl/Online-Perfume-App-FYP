@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:online_perfume_app_fyp/services/cart_service.dart';
 import 'package:online_perfume_app_fyp/models/cart_item_model.dart';
-import 'package:online_perfume_app_fyp/widgets/bottom_navigation_bar.dart';
-
-import 'package:online_perfume_app_fyp/widgets/cart_widgets.dart';
+import 'package:online_perfume_app_fyp/views/buyer/widgets/bottom_navigation_bar.dart';
+import 'package:online_perfume_app_fyp/views/buyer/widgets/cart_widgets.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -37,7 +36,6 @@ class _CartScreenState extends State<CartScreen> {
     final List<CartItemModel> items = List.from(_cartService.items);
 
     return Scaffold(
-      backgroundColor: const Color(0xffF1C8C6),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
