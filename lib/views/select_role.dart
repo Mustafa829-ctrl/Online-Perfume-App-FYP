@@ -3,15 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:online_perfume_app_fyp/models/select_role_model.dart';
 import 'package:online_perfume_app_fyp/services/select_role_service.dart';
-import 'package:online_perfume_app_fyp/views/seller/seller_homescreen.dart';
 import 'package:online_perfume_app_fyp/views/buyer/buyer_homescreen.dart';
 import 'package:online_perfume_app_fyp/views/rider/rider_homescreen.dart';
-import 'package:online_perfume_app_fyp/services/admin_service.dart';
 import 'package:online_perfume_app_fyp/models/admin_models.dart';
-
+import 'package:online_perfume_app_fyp/views/seller/seller_homescreen.dart';
 import 'admin/screens/admin_homescreen.dart';
-
-
 
 class SelectRole extends StatefulWidget {
   const SelectRole({super.key});
@@ -24,14 +20,21 @@ class _SelectRoleState extends State<SelectRole> {
   String? _selectedRole;
   bool _isLoading = false;
 
-  // Roles are now loaded from the service
   final List<RoleModel> _roles = SelectRoleServices.getRoles();
 
   Future<void> _onGetStarted() async {
     if (_selectedRole == null) return;
 
+    // ✅ Seller — direct to SellerHomescreen (temporary until auth)
+    // TODO: After auth → Seller Login Screen
+    // Flow: Seller registers → Admin verifies → Seller can login
     if (_selectedRole == 'seller') {
-      _handleSellerLogin();
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const SellerHomeScreen(),
+        ),
+      );
       return;
     }
 
@@ -44,21 +47,19 @@ class _SelectRoleState extends State<SelectRole> {
 
     if (success) {
       Widget targetScreen;
-
       switch (_selectedRole) {
         case 'buyer':
           targetScreen = const BuyerHomescreen();
           break;
         case 'rider':
-          targetScreen = const RiderHomescreen();
+          targetScreen = const RiderHomeScreen();
           break;
         case 'admin':
           targetScreen = const AdminHomeScreen();
           break;
         default:
-          targetScreen = const BuyerHomescreen(); // Default fallback
+          targetScreen = const BuyerHomescreen();
       }
-
       Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => targetScreen),
@@ -74,192 +75,39 @@ class _SelectRoleState extends State<SelectRole> {
     }
   }
 
-  void _handleSellerLogin() {
-    final sellers = AdminService.instance.sellers;
-    final primaryColor = const Color(0xff5E1D04);
-    final accentColor = const Color(0xffD08C4A);
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(
-            "Select Seller Profile",
-            style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: primaryColor),
-          ),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: sellers.length + 1,
-              itemBuilder: (context, index) {
-                if (index == sellers.length) {
-                  return ListTile(
-                    leading: Icon(Icons.add_business_rounded, color: accentColor),
-                    title: Text(
-                      "Register as New Seller",
-                      style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: primaryColor),
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _showRegisterSellerDialog();
-                    },
-                  );
-                }
-
-                final seller = sellers[index];
-                final isVerified = seller.status == "Verified";
-
-                return ListTile(
-                  leading: Icon(
-                    Icons.storefront_rounded,
-                    color: seller.isBlocked ? Colors.grey : (isVerified ? Colors.green : Colors.orange),
-                  ),
-                  title: Text(
-                    seller.name,
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.w600,
-                      color: seller.isBlocked ? Colors.grey : primaryColor,
-                    ),
-                  ),
-                  subtitle: Text(
-                    "Status: ${seller.isBlocked ? 'Blocked' : seller.status}",
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: seller.isBlocked ? Colors.red : (isVerified ? Colors.green[800] : Colors.orange[800]),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    if (seller.isBlocked) {
-                      _showVerificationErrorDialog(
-                        "Access Denied",
-                        "Your seller profile '${seller.name}' has been blocked by the Administrator.",
-                      );
-                    } else if (!isVerified) {
-                      _showVerificationErrorDialog(
-                        "Verification Pending",
-                        "Your seller profile '${seller.name}' is currently under review by the Administrator. Once verified, you will be granted access to the Seller Panel.",
-                      );
-                    } else {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => SellerHomescreen()),
-                      );
-                    }
-                  },
-                );
-              },
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text("Cancel", style: TextStyle(color: Colors.grey[700])),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showRegisterSellerDialog() {
-    final nameController = TextEditingController();
-    final emailController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-    final primaryColor = const Color(0xff5E1D04);
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(
-            "Seller Registration",
-            style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: primaryColor),
-          ),
-          content: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: nameController,
-                  decoration: const InputDecoration(labelText: "Brand/Seller Name"),
-                  validator: (val) => val == null || val.trim().isEmpty ? "Brand name is required" : null,
-                ),
-                TextFormField(
-                  controller: emailController,
-                  decoration: const InputDecoration(labelText: "Email"),
-                  validator: (val) {
-                    if (val == null || val.trim().isEmpty) return "Email is required";
-                    if (!val.contains("@")) return "Enter a valid email";
-                    return null;
-                  },
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text("Cancel", style: TextStyle(color: Colors.grey[700])),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
-              onPressed: () {
-                if (formKey.currentState!.validate()) {
-                  AdminService.instance.addSeller(
-                    nameController.text.trim(),
-                    emailController.text.trim(),
-                  );
-                  Navigator.pop(context);
-                  _showVerificationErrorDialog(
-                    "Registration Pending",
-                    "Thank you for registering '${nameController.text.trim()}'! Your seller profile is created with 'Pending' verification. An administrator will review your application soon.",
-                  );
-                }
-              },
-              child: const Text("Register", style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
+  // ✅ Kept for future use — shown after auth when seller is blocked/unverified
   void _showVerificationErrorDialog(String title, String message) {
-    final primaryColor = const Color(0xff5E1D04);
     showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Row(
-            children: [
-              Icon(Icons.warning_amber_rounded, color: Colors.orange[800], size: 28),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: primaryColor),
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded,
+                color: Colors.orange[800], size: 28),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.bold,
+                color: const Color(0xff5E1D04),
               ),
-            ],
-          ),
-          content: Text(
-            message,
-            style: GoogleFonts.poppins(color: Colors.grey[800], height: 1.4),
-          ),
-          actions: [
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
-              onPressed: () => Navigator.pop(context),
-              child: const Text("OK", style: TextStyle(color: Colors.white)),
             ),
           ],
-        );
-      },
+        ),
+        content: Text(
+          message,
+          style: GoogleFonts.poppins(color: Colors.grey[800], height: 1.4),
+        ),
+        actions: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xff5E1D04)),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -298,7 +146,7 @@ class _SelectRoleState extends State<SelectRole> {
             children: [
               const SizedBox(height: 4),
 
-              // ── Subtitle
+              // Subtitle
               Text(
                 'Select  how you want use\nthe App',
                 style: GoogleFonts.poppins(
@@ -308,10 +156,9 @@ class _SelectRoleState extends State<SelectRole> {
                 ),
                 textAlign: TextAlign.center,
               ),
-
               const SizedBox(height: 24),
 
-              // ── Role Grid
+              // Role Grid
               Expanded(
                 child: GridView.count(
                   crossAxisCount: 2,
@@ -319,13 +166,13 @@ class _SelectRoleState extends State<SelectRole> {
                   mainAxisSpacing: 14,
                   childAspectRatio: 1.0,
                   physics: const NeverScrollableScrollPhysics(),
-                  children: _roles.map((role) => _buildRoleCard(role)).toList(),
+                  children:
+                      _roles.map((role) => _buildRoleCard(role)).toList(),
                 ),
               ),
-
               const SizedBox(height: 20),
 
-              // ── Get Started button
+              // Get Started Button
               SizedBox(
                 width: double.infinity,
                 height: 54,
@@ -363,7 +210,6 @@ class _SelectRoleState extends State<SelectRole> {
                         ),
                 ),
               ),
-
               const SizedBox(height: 20),
             ],
           ),
@@ -374,7 +220,6 @@ class _SelectRoleState extends State<SelectRole> {
 
   Widget _buildRoleCard(RoleModel role) {
     final bool isSelected = _selectedRole == role.id;
-
     return GestureDetector(
       onTap: () => setState(() => _selectedRole = role.id),
       child: AnimatedContainer(
@@ -398,7 +243,6 @@ class _SelectRoleState extends State<SelectRole> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // ── Image or Icon
             ClipRRect(
               borderRadius: BorderRadius.circular(14),
               child: role.useAsset
@@ -422,10 +266,7 @@ class _SelectRoleState extends State<SelectRole> {
                       ),
                     ),
             ),
-
             const SizedBox(height: 10),
-
-            // ── Title
             Text(
               role.title,
               style: GoogleFonts.poppins(
@@ -434,8 +275,6 @@ class _SelectRoleState extends State<SelectRole> {
                 color: const Color(0xff5E1D04),
               ),
             ),
-
-            // ── Subtitle
             Text(
               role.subtitle,
               style: GoogleFonts.poppins(

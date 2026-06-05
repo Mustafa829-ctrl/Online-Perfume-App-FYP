@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:online_perfume_app_fyp/provider/rider-provider.dart';
 import 'package:online_perfume_app_fyp/views/admin/screens/admin_homescreen.dart';
 import 'package:online_perfume_app_fyp/views/buyer/buyer_homescreen.dart';
+import 'package:online_perfume_app_fyp/views/select_role.dart';
 import 'package:online_perfume_app_fyp/views/seller/seller_homescreen.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:online_perfume_app_fyp/views/splash-screen/splash_screen_2.dart';
 import 'package:online_perfume_app_fyp/views/splash-screen/splash_screen_3.dart';
+import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 
 void main() async{
@@ -11,7 +15,11 @@ void main() async{
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const MyApp());
+  runApp(MultiProvider(providers: [
+      ChangeNotifierProvider(create: (context) => RiderProvider())
+      // your existing providers...
+    ],
+      child: const MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -41,7 +49,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         scaffoldBackgroundColor: Colors.white,
       ),
-      home: AdminHomeScreen(),
+      home: SplashScreen2(),
     );
   }
 }
