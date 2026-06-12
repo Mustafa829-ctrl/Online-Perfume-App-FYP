@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:online_perfume_app_fyp/views/buyer/buyer_homescreen.dart';
+import '../screens/buyer_homescreen.dart';
 
 class MapIllustration extends StatelessWidget {
   final bool isRider;
@@ -23,7 +23,6 @@ class MapIllustration extends StatelessWidget {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // Road illustration
             Positioned(
               bottom: 0,
               left: 0,
@@ -33,7 +32,6 @@ class MapIllustration extends StatelessWidget {
                 color: const Color(0xff8B8B8B).withOpacity(0.4),
               ),
             ),
-            // Dashes on road
             Positioned(
               bottom: 26,
               left: 0,
@@ -42,13 +40,12 @@ class MapIllustration extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: List.generate(
                     8,
-                    (_) => Container(
+                        (_) => Container(
                         width: 28,
                         height: 4,
                         color: Colors.white.withOpacity(0.8))),
               ),
             ),
-            // Location pins
             const Positioned(
               top: 24,
               left: 40,
@@ -59,7 +56,6 @@ class MapIllustration extends StatelessWidget {
               right: 50,
               child: Icon(Icons.location_on, color: Colors.red, size: 40),
             ),
-            // Rider or Truck icon
             Positioned(
               bottom: 22,
               left: isRider ? 100 : 80,
@@ -71,13 +67,11 @@ class MapIllustration extends StatelessWidget {
                 size: 52,
               ),
             ),
-            // Order label
             Positioned(
               top: 12,
               left: 12,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.85),
                   borderRadius: BorderRadius.circular(8),
@@ -109,38 +103,39 @@ class TimelineStepData {
 class OrderTimeline extends StatelessWidget {
   final bool isCourier;
   final String companyName;
+  final String currentStatus; // Live status tracked from backend
 
   const OrderTimeline({
     super.key,
     required this.isCourier,
+    required this.currentStatus,
     this.companyName = '',
   });
 
   @override
   Widget build(BuildContext context) {
+    final status = currentStatus.toLowerCase().trim();
+
+    // Determine visual active tracking points dynamically
+    final bool isPlaced = true;
+    final bool isPacked = status == 'packed' || status == 'in transit' || status == 'delivered';
+    final bool isDispatched = status == 'in transit' || status == 'delivered';
+    final bool isDelivered = status == 'delivered';
+
     final steps = isCourier
         ? [
-            const TimelineStepData(Icons.check_circle_rounded, "Order Placed",
-                "Confirmed & being packed", true),
-            const TimelineStepData(Icons.inventory_2_outlined, "Quality Check",
-                "Package inspected & sealed", true),
-            TimelineStepData(Icons.local_shipping_outlined, "Dispatched",
-                "$companyName collected the parcel", true),
-            const TimelineStepData(Icons.route_outlined, "En Route",
-                "Package on its way to your city", false),
-            const TimelineStepData(Icons.home_outlined, "Delivered",
-                "Awaiting delivery", false),
-          ]
+      TimelineStepData(Icons.check_circle_rounded, "Order Placed", "Confirmed & being packed", isPlaced),
+      TimelineStepData(Icons.inventory_2_outlined, "Quality Check", "Package inspected & sealed", isPacked),
+      TimelineStepData(Icons.local_shipping_outlined, "Dispatched", "$companyName collected parcel", isDispatched),
+      TimelineStepData(Icons.route_outlined, "En Route", "Package traveling to destination", isDispatched && !isDelivered),
+      TimelineStepData(Icons.home_outlined, "Delivered", isDelivered ? "Successfully received!" : "Awaiting delivery", isDelivered),
+    ]
         : [
-            const TimelineStepData(Icons.check_circle_rounded, "Order Placed",
-                "Confirmed successfully", true),
-            const TimelineStepData(Icons.inventory_2_outlined, "Packed",
-                "Quality check complete", true),
-            const TimelineStepData(Icons.delivery_dining_rounded, "Rider Assigned",
-                "Rider is heading to you", true),
-            const TimelineStepData(Icons.home_outlined, "Delivered",
-                "Awaiting delivery", false),
-          ];
+      TimelineStepData(Icons.check_circle_rounded, "Order Placed", "Confirmed successfully", isPlaced),
+      TimelineStepData(Icons.inventory_2_outlined, "Packed", "Quality check complete", isPacked),
+      TimelineStepData(Icons.delivery_dining_rounded, "Rider Dispatched", status == 'in transit' ? "Rider is heading to you" : "Awaiting dispatch", isDispatched),
+      TimelineStepData(Icons.home_outlined, "Delivered", isDelivered ? "Handed over to buyer" : "Awaiting delivery", isDelivered),
+    ];
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -194,13 +189,11 @@ class OrderTimeline extends StatelessWidget {
                               fontWeight: FontWeight.w600,
                               color: step.done
                                   ? const Color(0xff5E1D04)
-                                  : const Color(0xff5E1D04)
-                                      .withOpacity(0.4))),
+                                  : const Color(0xff5E1D04).withOpacity(0.4))),
                       Text(step.subtitle,
                           style: GoogleFonts.poppins(
                               fontSize: 12,
-                              color: const Color(0xff5E1D04)
-                                  .withOpacity(0.55))),
+                              color: const Color(0xff5E1D04).withOpacity(0.55))),
                     ],
                   ),
                 ),
@@ -251,8 +244,7 @@ class LiveTrackBanner extends StatelessWidget {
             ),
           ),
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.25),
               borderRadius: BorderRadius.circular(8),
@@ -281,13 +273,11 @@ class DeliveryAddressCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border:
-            Border.all(color: const Color(0xffD08C4A).withOpacity(0.4)),
+        border: Border.all(color: const Color(0xffD08C4A).withOpacity(0.4)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.location_on_outlined,
-              color: Color(0xffD08C4A), size: 22),
+          const Icon(Icons.location_on_outlined, color: Color(0xffD08C4A), size: 22),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -368,7 +358,7 @@ class BackToHomeButton extends StatelessWidget {
         onPressed: () => Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => const BuyerHomescreen()),
-          (r) => false,
+              (r) => false,
         ),
         icon: const Icon(Icons.home_rounded, color: Color(0xff5E1D04)),
         label: Text("Back to Home",
@@ -378,8 +368,7 @@ class BackToHomeButton extends StatelessWidget {
                 color: const Color(0xff5E1D04))),
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xffD08C4A),
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           elevation: 6,
         ),
       ),
@@ -390,8 +379,7 @@ class BackToHomeButton extends StatelessWidget {
 class SnackBarHelper {
   static SnackBar styledSnack(String msg) {
     return SnackBar(
-      content: Text(msg,
-          style: GoogleFonts.poppins(color: const Color(0xff5E1D04))),
+      content: Text(msg, style: GoogleFonts.poppins(color: const Color(0xff5E1D04))),
       backgroundColor: const Color(0xffF6B55E),
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

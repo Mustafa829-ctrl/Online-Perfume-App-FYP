@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:online_perfume_app_fyp/models/cart_item_model.dart';
 import 'package:online_perfume_app_fyp/services/cart_service.dart';
-import 'package:online_perfume_app_fyp/views/buyer/checkout_screen.dart';
 
+import '../screens/checkout_screen.dart';
+
+/// Empty Cart View
 class EmptyCartView extends StatelessWidget {
   const EmptyCartView({super.key});
 
@@ -41,6 +43,7 @@ class EmptyCartView extends StatelessWidget {
   }
 }
 
+/// Cart Item Widget
 class CartItemWidget extends StatelessWidget {
   final CartItemModel item;
   final int index;
@@ -61,29 +64,42 @@ class CartItemWidget extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Colors.black,
+            color: Colors.black.withOpacity(0.06),
             blurRadius: 10,
-            offset: Offset(0, 4),
+            offset: const Offset(0, 4),
           )
         ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Product image
+          // Product Image
           ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Image.asset(
-              item.imagePath,
+            borderRadius: BorderRadius.circular(12),
+            child: SizedBox(
               width: 80,
               height: 80,
-              fit: BoxFit.cover,
+              child: item.imageUrl.isNotEmpty && item.imageUrl.startsWith('http')
+                  ? Image.network(
+                item.imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: Colors.grey[200],
+                  child: const Icon(Icons.image_not_supported, color: Color(0xff5E1D04), size: 35),
+                ),
+              )
+                  : Container(
+                color: Colors.grey[200],
+                child: const Icon(Icons.image_not_supported, color: Color(0xff5E1D04), size: 35),
+              ),
             ),
           ),
+
           const SizedBox(width: 14),
 
-          // Name, volume, price
+          // Product Details
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -98,14 +114,6 @@ class CartItemWidget extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  item.selectedVolume,
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: const Color(0xff5E1D04),
-                  ),
-                ),
                 const SizedBox(height: 6),
                 Text(
                   "\$${item.totalPrice.toStringAsFixed(2)}",
@@ -119,9 +127,10 @@ class CartItemWidget extends StatelessWidget {
             ),
           ),
 
-          // Quantity controls
+          // Quantity Controls
           CartQuantityControls(
-            index: index,
+            buyerId: item.buyerId ?? '',
+            cartItemId: item.cartItemId ?? '',
             quantity: item.quantity,
             cartService: cartService,
           ),
@@ -131,14 +140,17 @@ class CartItemWidget extends StatelessWidget {
   }
 }
 
+/// Quantity Controls
 class CartQuantityControls extends StatelessWidget {
-  final int index;
+  final String buyerId;
+  final String cartItemId;
   final int quantity;
   final CartService cartService;
 
   const CartQuantityControls({
     super.key,
-    required this.index,
+    required this.buyerId,
+    required this.cartItemId,
     required this.quantity,
     required this.cartService,
   });
@@ -151,22 +163,21 @@ class CartQuantityControls extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Plus button
           GestureDetector(
-            onTap: () => cartService.incrementQuantity(index),
-            child: Container(
-              width: 36,
-              height: 36,
-              alignment: Alignment.center,
-              child: const Icon(Icons.add, color: Color(0xff5E1D04), size: 20),
+            onTap: () => cartService.updateCartQuantity(
+              buyerId: buyerId,
+              cartItemId: cartItemId,
+              newQuantity: quantity + 1,
+            ),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Icon(Icons.add, color: Color(0xff5E1D04), size: 20),
             ),
           ),
-          // Quantity number
           Container(
-            width: 36,
-            height: 30,
-            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             color: const Color(0xff5E1D04),
             child: Text(
               "$quantity",
@@ -177,14 +188,15 @@ class CartQuantityControls extends StatelessWidget {
               ),
             ),
           ),
-          // Minus button
           GestureDetector(
-            onTap: () => cartService.decrementQuantity(index),
-            child: Container(
-              width: 36,
-              height: 36,
-              alignment: Alignment.center,
-              child: const Icon(Icons.remove, color: Color(0xff5E1D04), size: 20),
+            onTap: () => cartService.updateCartQuantity(
+              buyerId: buyerId,
+              cartItemId: cartItemId,
+              newQuantity: quantity - 1,
+            ),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Icon(Icons.remove, color: Color(0xff5E1D04), size: 20),
             ),
           ),
         ],
@@ -193,6 +205,7 @@ class CartQuantityControls extends StatelessWidget {
   }
 }
 
+/// Cart Order Summary
 class CartOrderSummary extends StatelessWidget {
   final double subtotal;
   final double total;
@@ -206,55 +219,42 @@ class CartOrderSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-      decoration: const BoxDecoration(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+      decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black,
-            blurRadius: 16,
-            offset: Offset(0, -4),
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 15,
+            offset: const Offset(0, -5),
           ),
         ],
       ),
       child: Column(
         children: [
-          // Subtotal row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 "Subtotal",
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  color: const Color(0xff5E1D04),
-                ),
+                style: GoogleFonts.poppins(fontSize: 16, color: const Color(0xff5E1D04)),
               ),
               Text(
                 "\$${subtotal.toStringAsFixed(2)}",
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  color: const Color(0xff5E1D04),
-                  fontWeight: FontWeight.w600,
-                ),
+                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          const Divider(color: Color(0xffD08C4A), thickness: 0.8),
-          const SizedBox(height: 6),
-          // Total row
+          const SizedBox(height: 8),
+          const Divider(color: Color(0xffD08C4A), thickness: 1),
+          const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 "Total",
-                style: GoogleFonts.poppins(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xff5E1D04),
-                ),
+                style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xff5E1D04)),
               ),
               Text(
                 "\$${total.toStringAsFixed(2)}",
@@ -266,39 +266,29 @@ class CartOrderSummary extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          // Proceed to Checkout Button
+          const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,
             height: 55,
             child: ElevatedButton(
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const CheckoutScreen(),
-                  ),
-                );
+                // Navigate to Checkout
+                 Navigator.push(context, MaterialPageRoute(builder: (_) => const CheckoutScreen()));
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xffD08C4A),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                elevation: 8,
-                shadowColor: Colors.black,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
               child: Text(
                 "Proceed to Checkout",
                 style: GoogleFonts.poppins(
-                  fontSize: 18,
+                  fontSize: 17,
                   fontWeight: FontWeight.bold,
                   color: const Color(0xff5E1D04),
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 8),
         ],
       ),
     );

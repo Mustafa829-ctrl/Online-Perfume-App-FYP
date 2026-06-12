@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import 'delivery_widgets.dart';
 
 class RiderDeliveryView extends StatelessWidget {
-  final Map<String, String> rider;
+  final Map<String, dynamic> rider; // Changed to dynamic to support backend object parsing safely
   final String deliveryAddress;
 
   const RiderDeliveryView({
@@ -15,6 +14,10 @@ class RiderDeliveryView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String currentStatus = rider['status']?.toString() ?? 'Pending';
+    final String riderName = rider['name']?.toString() ?? 'Awaiting Assignment';
+    final String initialAvatarLetter = riderName.isNotEmpty ? riderName[0].toUpperCase() : 'R';
+
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: Column(
@@ -35,7 +38,7 @@ class RiderDeliveryView extends StatelessWidget {
                       style: GoogleFonts.poppins(
                           fontSize: 13,
                           color: const Color(0xff5E1D04).withOpacity(0.6))),
-                  Text("Within 24 Hours",
+                  Text(rider['eta']?.toString() ?? 'Within 24 Hours',
                       style: GoogleFonts.poppins(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -43,13 +46,11 @@ class RiderDeliveryView extends StatelessWidget {
                 ],
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: const Color(0xffD08C4A).withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                      color: const Color(0xffD08C4A), width: 1.2),
+                  border: Border.all(color: const Color(0xffD08C4A), width: 1.2),
                 ),
                 child: Row(
                   children: [
@@ -60,11 +61,13 @@ class RiderDeliveryView extends StatelessWidget {
                             shape: BoxShape.circle,
                             color: Color(0xffD08C4A))),
                     const SizedBox(width: 6),
-                    Text("In Progress",
-                        style: GoogleFonts.poppins(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xff5E1D04))),
+                    Text(
+                      currentStatus,
+                      style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xff5E1D04)),
+                    ),
                   ],
                 ),
               ),
@@ -72,8 +75,11 @@ class RiderDeliveryView extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // ── Order timeline
-          const OrderTimeline(isCourier: false),
+          // ── Order timeline linked with real stream backend status tracking
+          OrderTimeline(
+            isCourier: false,
+            currentStatus: currentStatus,
+          ),
           const SizedBox(height: 20),
 
           // ── Rider details card
@@ -101,7 +107,7 @@ class RiderDeliveryView extends StatelessWidget {
                       radius: 30,
                       backgroundColor: const Color(0xffD08C4A),
                       child: Text(
-                        rider['name']![0],
+                        initialAvatarLetter,
                         style: GoogleFonts.playfairDisplay(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
@@ -113,7 +119,7 @@ class RiderDeliveryView extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(rider['name']!,
+                          Text(riderName,
                               style: GoogleFonts.poppins(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -121,18 +127,22 @@ class RiderDeliveryView extends StatelessWidget {
                           Text("Delivery Rider",
                               style: GoogleFonts.poppins(
                                   fontSize: 12,
-                                  color: const Color(0xff5E1D04)
-                                      .withOpacity(0.55))),
+                                  color: const Color(0xff5E1D04).withOpacity(0.55))),
                         ],
                       ),
                     ),
                     // Call button
                     GestureDetector(
                       onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBarHelper.styledSnack(
-                              "Calling ${rider['name']}... (API pending)"),
-                        );
+                        if (rider['phone'] != null && rider['phone'] != '—') {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBarHelper.styledSnack("Contacting $riderName at ${rider['phone']}..."),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBarHelper.styledSnack("Rider contact number unavailable."),
+                          );
+                        }
                       },
                       child: Container(
                         padding: const EdgeInsets.all(10),
@@ -149,22 +159,20 @@ class RiderDeliveryView extends StatelessWidget {
                 const SizedBox(height: 16),
                 const Divider(color: Color(0xffD08C4A), thickness: 0.6),
                 const SizedBox(height: 12),
+
+                // Real registration metrics (Stripped out color, CNIC, and license profiles)
                 InfoRowWidget(
                     icon: Icons.phone_android_outlined,
                     label: "Phone",
-                    value: rider['phone']!),
-                InfoRowWidget(
-                    icon: Icons.badge_outlined,
-                    label: "CNIC",
-                    value: rider['cnic']!),
-                InfoRowWidget(
-                    icon: Icons.card_membership_outlined,
-                    label: "Bike License",
-                    value: rider['license']!),
+                    value: rider['phone']?.toString() ?? '—'),
                 InfoRowWidget(
                     icon: Icons.two_wheeler_rounded,
-                    label: "Bike",
-                    value: "${rider['bike']} • ${rider['color']}"),
+                    label: "Vehicle Model",
+                    value: rider['bike']?.toString() ?? 'Delivery Vehicle'),
+                InfoRowWidget(
+                    icon: Icons.pin_outlined,
+                    label: "Registration Number",
+                    value: rider['bikeNumber']?.toString() ?? '—'),
               ],
             ),
           ),

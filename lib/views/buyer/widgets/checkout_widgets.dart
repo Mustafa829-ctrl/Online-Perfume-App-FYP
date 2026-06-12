@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:online_perfume_app_fyp/services/cart_service.dart';
+import 'package:online_perfume_app_fyp/models/cart_item_model.dart';
 
 class CheckoutStepper extends StatelessWidget {
   final int currentStep;
@@ -14,7 +14,6 @@ class CheckoutStepper extends StatelessWidget {
       child: Row(
         children: List.generate(steps.length * 2 - 1, (i) {
           if (i.isOdd) {
-            // Connector line
             return Expanded(
               child: Container(
                 height: 2,
@@ -36,28 +35,28 @@ class CheckoutStepper extends StatelessWidget {
                   color: const Color(0xffD08C4A),
                   boxShadow: isActive
                       ? [
-                          const BoxShadow(
-                            color: Color(0xffD08C4A),
-                            blurRadius: 10,
-                            spreadRadius: 2,
-                          )
-                        ]
+                    const BoxShadow(
+                      color: Color(0xffD08C4A),
+                      blurRadius: 10,
+                      spreadRadius: 2,
+                    )
+                  ]
                       : [],
                 ),
                 child: Center(
                   child: isDone
                       ? const Icon(Icons.check_rounded,
-                          color: Color(0xff5E1D04), size: 22)
+                      color: Color(0xff5E1D04), size: 22)
                       : Text(
-                          "${stepIndex + 1}",
-                          style: GoogleFonts.poppins(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: isActive
-                                ? const Color(0xff5E1D04)
-                                : const Color(0xff5E1D04).withOpacity(0.4),
-                          ),
-                        ),
+                    "${stepIndex + 1}",
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: isActive
+                          ? const Color(0xff5E1D04)
+                          : const Color(0xff5E1D04).withOpacity(0.4),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 6),
@@ -349,13 +348,18 @@ class PaymentStep extends StatelessWidget {
 
 class ReviewStep extends StatelessWidget {
   final String savedAddress;
-  const ReviewStep({super.key, required this.savedAddress});
+  final List<CartItemModel> cartItems; // Injected directly from CheckoutScreen state
+  final double totalAmount;             // Injected directly from CheckoutScreen state
+
+  const ReviewStep({
+    super.key,
+    required this.savedAddress,
+    required this.cartItems,
+    required this.totalAmount,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final cartItems = CartService.instance.items;
-    final total = CartService.instance.total;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -369,52 +373,69 @@ class ReviewStep extends StatelessWidget {
         ),
         const SizedBox(height: 14),
 
-        // Items list
+        // Items list mapping cloud payloads
         ...cartItems.map((item) => Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.6),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Row(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.asset(item.imagePath,
-                        width: 60, height: 60, fit: BoxFit.cover),
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.6),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: item.imageUrl.isNotEmpty
+                    ? Image.network(
+                  item.imageUrl,
+                  width: 60,
+                  height: 60,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 60,
+                    height: 60,
+                    color: Colors.grey.shade100,
+                    child: const Icon(Icons.local_florist_outlined, color: Color(0xffD08C4A)),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.productName,
-                          style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xff5E1D04)),
-                        ),
-                        Text(
-                          "${item.selectedVolume}  ×  ${item.quantity}",
-                          style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: const Color(0xff5E1D04).withOpacity(0.6)),
-                        ),
-                      ],
+                )
+                    : Container(
+                  width: 60,
+                  height: 60,
+                  color: Colors.grey.shade100,
+                  child: const Icon(Icons.local_florist_outlined, color: Color(0xffD08C4A)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.productName,
+                      style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xff5E1D04)),
                     ),
-                  ),
-                  Text(
-                    "\$${item.totalPrice.toStringAsFixed(2)}",
-                    style: GoogleFonts.poppins(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xff5E1D04)),
-                  ),
-                ],
+                    Text(
+                      "Qty: ${item.quantity}",
+                      style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: const Color(0xff5E1D04).withOpacity(0.6)),
+                    ),
+                  ],
+                ),
               ),
-            )),
+              Text(
+                "Rs ${item.totalPrice.toStringAsFixed(0)}",
+                style: GoogleFonts.poppins(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xff5E1D04)),
+              ),
+            ],
+          ),
+        )),
 
         const SizedBox(height: 16),
 
@@ -433,7 +454,7 @@ class ReviewStep extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                     color: const Color(0xff5E1D04))),
             Text(
-              "\$${total.toStringAsFixed(2)}",
+              "Rs ${totalAmount.toStringAsFixed(0)}",
               style: GoogleFonts.playfairDisplay(
                   fontSize: 22,
                   fontWeight: FontWeight.w900,

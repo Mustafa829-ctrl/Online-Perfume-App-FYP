@@ -1,11 +1,22 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:online_perfume_app_fyp/views/buyer/product_details.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:online_perfume_app_fyp/services/wishlist_service.dart';
+import '../../../models/product_model.dart';
+import '../screens/product_details.dart';
 
 class HomeSearchBar extends StatelessWidget {
   final VoidCallback? onFilterTap;
-  const HomeSearchBar({super.key, this.onFilterTap});
+  final ValueChanged<String>? onChanged;
+  final TextEditingController? controller;
+
+  const HomeSearchBar({
+    super.key,
+    this.onFilterTap,
+    this.onChanged,
+    this.controller,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +25,7 @@ class HomeSearchBar extends StatelessWidget {
         Expanded(
           child: Container(
             decoration: BoxDecoration(
-              color: const Color(0xffF6B55E), // Orange/yellow
+              color: const Color(0xffF6B55E),
               borderRadius: BorderRadius.circular(12),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -24,10 +35,15 @@ class HomeSearchBar extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: TextField(
+                    controller: controller,
+                    onChanged: onChanged,
+                    style: GoogleFonts.poppins(
+                        color: const Color(0xff5E1D04), fontSize: 14),
                     decoration: InputDecoration(
                       hintText: "Search product",
                       hintStyle: GoogleFonts.poppins(
-                        color: const Color(0xff5E1D04),
+                        color:
+                        const Color(0xff5E1D04).withOpacity(0.7),
                         fontSize: 14,
                       ),
                       border: InputBorder.none,
@@ -59,127 +75,6 @@ class HomeSearchBar extends StatelessWidget {
   }
 }
 
-class HomeLimitedOffer extends StatelessWidget {
-  const HomeLimitedOffer({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Limited Offer clicked!")),
-        );
-      },
-      child: Stack(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Image.asset(
-              'assets/images/perfume-6.png', // Or ads2.png, perfume.png
-              height: 200,
-              width: double.infinity,
-              fit: BoxFit.cover,
-            ),
-          ),
-          Positioned(
-            top: 10,
-            left: 10,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                "Limited Offer",
-                style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xff5E1D04),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class HomeGiftFinder extends StatelessWidget {
-  const HomeGiftFinder({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xff2A1A12), // Dark brown/black on left
-            Color(0xffD5A66B), // Goldish on right
-            Color(0xffFDFBF7), // White/light on far right behind image
-          ],
-          stops: [0.0, 0.5, 1.0],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black,
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Row(
-          children: [
-            Expanded(
-              flex: 3,
-              child: Padding(
-                padding: const EdgeInsets.only(
-                    left: 16.0, top: 16.0, bottom: 16.0, right: 8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Gift Finder",
-                      style: GoogleFonts.poppins(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xff5E1D04), // Dark brown text on gold background
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "Find the perfect\ngift for any occasion",
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
-                        color: const Color(0xff5E1D04),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Expanded(
-              flex: 2,
-              child: Image.asset(
-                "assets/images/perfume.png", // Using dummy image for gift boxes
-                fit: BoxFit.cover,
-                height: 110,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class BrandChip extends StatelessWidget {
   final String label;
   final String? imagePath;
@@ -199,28 +94,38 @@ class BrandChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding:
+        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xff5E1D04) : const Color(0xff1A0A1F), // Very dark background like the design
+          color: isSelected
+              ? const Color(0xff5E1D04)
+              : const Color(0xff1A0A1F),
           borderRadius: BorderRadius.circular(8),
           border: isSelected
-              ? Border.all(color: const Color(0xffF6B55E), width: 1.5)
+              ? Border.all(
+              color: const Color(0xffF6B55E), width: 1.5)
               : null,
         ),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            if (imagePath != null) ...[
+            if (imagePath != null && imagePath!.isNotEmpty) ...[
               CircleAvatar(
                 radius: 12,
-                backgroundImage: AssetImage(imagePath!),
+                backgroundColor: Colors.transparent,
+                backgroundImage: imagePath!.startsWith('http')
+                    ? NetworkImage(imagePath!) as ImageProvider
+                    : AssetImage(imagePath!),
               ),
               const SizedBox(width: 8),
             ],
             Text(
               label,
               style: GoogleFonts.poppins(
-                color: const Color(0xffF6B55E), // Making text yellow as per design
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                color: const Color(0xffF6B55E),
+                fontWeight: isSelected
+                    ? FontWeight.bold
+                    : FontWeight.w500,
               ),
             ),
           ],
@@ -230,22 +135,43 @@ class BrandChip extends StatelessWidget {
   }
 }
 
+// ── ProductHomeCard — fully wired with Firestore wishlist + login guard
 class ProductHomeCard extends StatelessWidget {
-  final Map<String, dynamic> product;
+  final ProductModel product;
+  final bool isLoggedIn;
+  final VoidCallback onLoginRequired;
 
-  const ProductHomeCard({super.key, required this.product});
+  const ProductHomeCard({
+    super.key,
+    required this.product,
+    required this.isLoggedIn,
+    required this.onLoginRequired,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final String formattedPrice =
+    product.sizes != null && product.sizes!.isNotEmpty
+        ? 'Rs ${product.sizes!.first['price']}'
+        : 'Rs ${product.price ?? 0.0}';
+
+    final double numericPrice =
+    product.sizes != null && product.sizes!.isNotEmpty
+        ? double.tryParse(
+        product.sizes!.first['price'].toString()) ??
+        0.0
+        : (product.price ?? 0.0);
+
     return GestureDetector(
+      // ✅ Product detail — always accessible (guest allowed)
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ProductDetails(
-              productName: product["name"],
-              productPrice: product["price"],
-              imagePath: product["image"],
+            builder: (_) => ProductDetails(
+              product: product,
+              isLoggedIn: isLoggedIn,
+              onLoginRequired: onLoginRequired,
             ),
           ),
         );
@@ -254,6 +180,14 @@ class ProductHomeCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.shade100,
+              blurRadius: 6,
+              spreadRadius: 2,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         padding: const EdgeInsets.all(12),
         child: Stack(
@@ -261,17 +195,36 @@ class ProductHomeCard extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Product image
                 Expanded(
                   child: Center(
-                    child: Image.asset(
-                      product["image"],
-                      fit: BoxFit.contain,
+                    child: product.imageUrl != null &&
+                        product.imageUrl!.isNotEmpty
+                        ? ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        product.imageUrl!,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) =>
+                        const Icon(
+                          Icons.local_florist_outlined,
+                          color: Color(0xffD08C4A),
+                          size: 40,
+                        ),
+                      ),
+                    )
+                        : const Icon(
+                      Icons.local_florist_outlined,
+                      color: Color(0xffD08C4A),
+                      size: 40,
                     ),
                   ),
                 ),
                 const SizedBox(height: 8),
+
+                // Product name
                 Text(
-                  product["name"],
+                  product.name ?? 'Fragrance',
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.bold,
                     color: const Color(0xff5E1D04),
@@ -279,30 +232,46 @@ class ProductHomeCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+
+                // Brand
                 Text(
-                  product["brand"],
+                  product.brand ?? 'Generic Brand',
                   style: GoogleFonts.poppins(
                     fontSize: 12,
-                    color: const Color(0xff5E1D04),
+                    color:
+                    const Color(0xff5E1D04).withOpacity(0.8),
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
+
+                // Price + rating
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment:
+                  MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      product["price"],
+                      formattedPrice,
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.bold,
                         color: const Color(0xff5E1D04),
+                        fontSize: 13,
                       ),
                     ),
                     Row(
                       children: [
-                        const Icon(Icons.star, color: Colors.orange, size: 14),
+                        const Icon(Icons.star,
+                            color: Colors.orange, size: 14),
+                        const SizedBox(width: 2),
                         Text(
-                          product["rating"],
-                          style: GoogleFonts.poppins(fontSize: 12),
+                          (product.rating ?? 0.0)
+                              .toStringAsFixed(1),
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey.shade700,
+                          ),
                         ),
                       ],
                     ),
@@ -310,37 +279,111 @@ class ProductHomeCard extends StatelessWidget {
                 ),
               ],
             ),
+
+            // ✅ Wishlist button — Firestore stream + login guard
             Positioned(
               top: 0,
               right: 0,
-              child: ListenableBuilder(
-                listenable: WishlistService.instance,
-                builder: (context, _) {
-                  final bool isLiked = WishlistService.instance.isInWishlist(product["name"]);
-                  return IconButton(
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    icon: Icon(
-                      isLiked ? Icons.favorite : Icons.favorite_border,
-                      color: isLiked ? const Color(0xffF6B55E) : const Color(0xff5E1D04),
-                      size: 22,
-                    ),
-                    onPressed: () {
-                      final priceStr = product["price"].replaceAll(RegExp(r'[^\d.]'), '');
-                      final price = double.tryParse(priceStr) ?? 0.0;
-                      WishlistService.instance.toggleWishlist(
-                        name: product["name"],
-                        price: price,
-                        imagePath: product["image"],
-                      );
-                    },
-                  );
-                },
+              child: _WishlistButton(
+                product: product,
+                numericPrice: numericPrice,
+                isLoggedIn: isLoggedIn,
+                onLoginRequired: onLoginRequired,
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+// ── Wishlist Button — uses Firestore stream for real-time state
+class _WishlistButton extends StatelessWidget {
+  final ProductModel product;
+  final double numericPrice;
+  final bool isLoggedIn;
+  final VoidCallback onLoginRequired;
+
+  const _WishlistButton({
+    required this.product,
+    required this.numericPrice,
+    required this.isLoggedIn,
+    required this.onLoginRequired,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Guest — always shows unfilled heart, tapping shows login prompt
+    if (!isLoggedIn) {
+      return IconButton(
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(),
+        icon: const Icon(
+          Icons.favorite_border,
+          color: Color(0xff5E1D04),
+          size: 22,
+        ),
+        onPressed: onLoginRequired,
+      );
+    }
+
+    // Logged in — stream from Firestore for real-time wishlist state
+    final String buyerId =
+        FirebaseAuth.instance.currentUser!.uid;
+    final String wishlistItemId =
+        '${buyerId}_${product.docId ?? ''}';
+
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('wishlists')
+          .doc(buyerId)
+          .collection('items')
+          .doc(wishlistItemId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final bool isLiked =
+            snapshot.data?.exists ?? false;
+
+        return IconButton(
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+          icon: Icon(
+            isLiked ? Icons.favorite : Icons.favorite_border,
+            color: isLiked
+                ? const Color(0xffF6B55E)
+                : const Color(0xff5E1D04),
+            size: 22,
+          ),
+          onPressed: () async {
+            try {
+              await WishlistService().toggleWishlist(
+                buyerId:   buyerId,
+                productId: product.docId ?? '',
+                name:      product.name ?? '',
+                price:     numericPrice,
+                imagePath: product.imageUrl ?? '',
+                sellerId:  product.sellerId ?? '',
+              );
+            } catch (e) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(e.toString(),
+                        style:
+                        GoogleFonts.poppins(fontSize: 13)),
+                    backgroundColor: Colors.red.shade400,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                        borderRadius:
+                        BorderRadius.circular(10)),
+                  ),
+                );
+              }
+            }
+          },
+        );
+      },
     );
   }
 }

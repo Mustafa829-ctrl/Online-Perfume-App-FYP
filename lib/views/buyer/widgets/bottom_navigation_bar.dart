@@ -1,9 +1,12 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:online_perfume_app_fyp/views/buyer/buyer_homescreen.dart';
-import 'package:online_perfume_app_fyp/views/buyer/cart_screen.dart';
-import 'package:online_perfume_app_fyp/views/buyer/wishlist_screen.dart';
-import 'package:online_perfume_app_fyp/views/buyer/profile_screen.dart';
-import 'package:online_perfume_app_fyp/services/cart_service.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:online_perfume_app_fyp/views/buyer/screens/buyer_homescreen.dart';
+import 'package:online_perfume_app_fyp/views/buyer/screens/cart_screen.dart';
+import 'package:online_perfume_app_fyp/views/buyer/screens/profile_screen.dart';
+import 'package:online_perfume_app_fyp/views/buyer/screens/wishlist_screen.dart';
+import '../buyer auth/buyer_login_screen.dart';
 
 class CustomBottomNav extends StatefulWidget {
   final int currentIndex;
@@ -18,198 +21,234 @@ class CustomBottomNav extends StatefulWidget {
 }
 
 class _CustomBottomNavState extends State<CustomBottomNav> {
-  static const _activeColor = Color(0xFFFF5722);
+  // ── Check if user is logged in
+  bool get _isLoggedIn => FirebaseAuth.instance.currentUser != null;
 
-  @override
-  void initState() {
-    super.initState();
-    CartService.instance.addListener(_onCartChanged);
+  // ── Get cart count stream directly from Firestore
+  // Returns 0 if not logged in
+  Stream<int> get _cartCountStream {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return Stream.value(0);
+
+    return FirebaseFirestore.instance
+        .collection('carts')
+        .doc(user.uid)
+        .collection('items')
+        .snapshots()
+        .map((snap) => snap.docs.length);
   }
 
-  @override
-  void dispose() {
-    CartService.instance.removeListener(_onCartChanged);
-    super.dispose();
-  }
-
-  void _onCartChanged() {
-    if (mounted) setState(() {});
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final int cartCount = CartService.instance.totalItemCount;
-    return SafeArea(
-      top: false,
-      child: Container(
-        height: 72,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(30),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.15),
-              blurRadius: 15,
-              spreadRadius: 2,
-              offset: const Offset(0, 4),
+  // ── Show login prompt dialog
+  void _showLoginPrompt(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape:
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.lock_outline,
+                color: Color(0xffD08C4A), size: 24),
+            const SizedBox(width: 8),
+            Text(
+              'Login Required',
+              style: GoogleFonts.playfairDisplay(
+                fontWeight: FontWeight.bold,
+                color: const Color(0xff5E1D04),
+                fontSize: 16,
+              ),
             ),
           ],
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _buildNavItem(context, 0,
-                icon: Icons.home_rounded,
-                activeIcon: Icons.home_outlined,
-                label: "Home"),
-            _buildNavItem(context, 1,
-                icon: Icons.favorite,
-                activeIcon: Icons.favorite_border,
-                label: "Wishlist"),
-            _buildNavItem(context, 2,
-                icon: Icons.shopping_bag_rounded,
-                activeIcon: Icons.shopping_bag_outlined,
-                label: "Cart",
-                badgeCount: cartCount),
-            _buildNavItem(context, 3,
-                assetPath: "assets/images/Profile_photo.jpg",
-                label: "Profile"),
-          ],
+        content: Text(
+          'Please login or create an account to access this feature.',
+          style: GoogleFonts.poppins(
+              fontSize: 13, color: Colors.grey.shade600),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel',
+                style:
+                GoogleFonts.poppins(color: Colors.grey.shade600)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => const BuyerLoginScreen()),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xff5E1D04),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+            child: Text('Login',
+                style: GoogleFonts.poppins(
+                    color: const Color(0xffD08C4A),
+                    fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildNavItem(
-    BuildContext context,
-    int index, {
-    IconData? icon,
-    IconData? activeIcon,
-    String? assetPath,
-    required String label,
-    int badgeCount = 0,
-  }) {
-    final bool isActive = widget.currentIndex == index;
+  void _onNavTap(BuildContext context, int index) {
+    if (widget.currentIndex == index) return;
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () {
-        if (isActive) return;
+    // Guard cart, wishlist, profile — require login
+    if (!_isLoggedIn && index != 0) {
+      _showLoginPrompt(context);
+      return;
+    }
 
-        Widget targetScreen;
-        switch (index) {
-          case 0:
-            targetScreen = const BuyerHomescreen();
-            break;
-          case 2:
-            targetScreen = const CartScreen();
-            break;
-          case 1:
-            targetScreen = const WishlistScreen();
-            break;
-          case 3:
-            targetScreen = const ProfileScreen();
-            break;
-          default:
-            targetScreen = const BuyerHomescreen();
-        }
+    Widget targetScreen;
+    switch (index) {
+      case 0:
+        targetScreen = const BuyerHomescreen();
+        break;
+      case 1:
+        targetScreen = const WishlistScreen();
+        break;
+      case 2:
+        targetScreen = const CartScreen();
+        break;
+      case 3:
+        targetScreen = const ProfileScreen();
+        break;
+      default:
+        targetScreen = const BuyerHomescreen();
+    }
 
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation1, animation2) => targetScreen,
-            transitionDuration: Duration.zero,
-            reverseTransitionDuration: Duration.zero,
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => targetScreen,
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<int>(
+      stream: _cartCountStream,
+      initialData: 0,
+      builder: (context, snapshot) {
+        final int cartCount = snapshot.data ?? 0;
+
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 10,
+                offset: const Offset(0, -3),
+              ),
+            ],
+          ),
+          child: BottomNavigationBar(
+            currentIndex: widget.currentIndex,
+            onTap: (index) => _onNavTap(context, index),
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: Colors.white,
+            selectedItemColor: const Color(0xffD08C4A),
+            unselectedItemColor: Colors.grey.shade400,
+            selectedLabelStyle: GoogleFonts.poppins(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+            unselectedLabelStyle: GoogleFonts.poppins(fontSize: 11),
+            elevation: 0,
+            items: [
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.home_outlined),
+                activeIcon: Icon(Icons.home_rounded),
+                label: 'Home',
+              ),
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.favorite_border),
+                activeIcon: Icon(Icons.favorite),
+                label: 'Wishlist',
+              ),
+
+              // Cart with live badge from Firestore stream
+              BottomNavigationBarItem(
+                icon: _CartIcon(
+                  cartCount: cartCount,
+                  isLoggedIn: _isLoggedIn,
+                  isActive: false,
+                ),
+                activeIcon: _CartIcon(
+                  cartCount: cartCount,
+                  isLoggedIn: _isLoggedIn,
+                  isActive: true,
+                ),
+                label: 'Cart',
+              ),
+
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.person_outline_rounded),
+                activeIcon: Icon(Icons.person_rounded),
+                label: 'Profile',
+              ),
+            ],
           ),
         );
       },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: BoxDecoration(
-          color: isActive ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // ── Icon OR asset image ──────────────────
-            if (assetPath != null)
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                width: 26,
-                height: 26,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isActive ? _activeColor : Colors.transparent,
-                    width: 2,
-                  ),
-                ),
-                child: ClipOval(
-                  child: Image.asset(
-                    assetPath,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              )
-            else
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    transitionBuilder: (child, animation) =>
-                        ScaleTransition(scale: animation, child: child),
-                    child: Icon(
-                      isActive ? activeIcon : icon,
-                      key: ValueKey(isActive),
-                      color: isActive ? _activeColor : const Color(0xFF5E1D04),
-                      size: 24,
-                    ),
-                  ),
-                  if (badgeCount > 0)
-                    Positioned(
-                      top: -6,
-                      right: -8,
-                      child: Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF5E1D04),
-                          shape: BoxShape.circle,
-                        ),
-                        constraints: const BoxConstraints(minWidth: 17, minHeight: 17),
-                        child: Text(
-                          badgeCount > 99 ? '99+' : '$badgeCount',
-                          style: const TextStyle(
-                            color: Color(0xffF6B55E),
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
+    );
+  }
+}
 
-            const SizedBox(height: 4),
+// ── Cart Icon with badge
+class _CartIcon extends StatelessWidget {
+  final int cartCount;
+  final bool isLoggedIn;
+  final bool isActive;
 
-            // ── Label always shows under both icon and image ──
-            AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 200),
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                color: isActive ? _activeColor : const Color(0xFF5E1D04),
+  const _CartIcon({
+    required this.cartCount,
+    required this.isLoggedIn,
+    required this.isActive,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Icon(isActive
+            ? Icons.shopping_bag_rounded
+            : Icons.shopping_bag_outlined),
+        if (cartCount > 0 && isLoggedIn)
+          Positioned(
+            top: -6,
+            right: -8,
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              decoration: const BoxDecoration(
+                color: Color(0xff5E1D04),
+                shape: BoxShape.circle,
               ),
-              child: Text(label),
+              constraints:
+              const BoxConstraints(minWidth: 17, minHeight: 17),
+              child: Text(
+                cartCount > 99 ? '99+' : '$cartCount',
+                style: const TextStyle(
+                  color: Color(0xffD08C4A),
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
             ),
-          ],
-        ),
-      ),
+          ),
+      ],
     );
   }
 }

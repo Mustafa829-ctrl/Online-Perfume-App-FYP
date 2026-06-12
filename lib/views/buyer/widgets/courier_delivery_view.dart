@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import 'delivery_widgets.dart';
+
 class CourierDeliveryView extends StatelessWidget {
-  final Map<String, String> courier;
+  final Map<String, dynamic> courier; // Changed from String to dynamic to accept dynamic data objects cleanly
   final String deliveryAddress;
 
   const CourierDeliveryView({
@@ -15,16 +15,16 @@ class CourierDeliveryView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String currentStatus = courier['status']?.toString() ?? 'Pending';
+
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Courier illustration banner
           const MapIllustration(isRider: false),
           const SizedBox(height: 16),
 
-          // ── ETA row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -35,7 +35,7 @@ class CourierDeliveryView extends StatelessWidget {
                       style: GoogleFonts.poppins(
                           fontSize: 13,
                           color: const Color(0xff5E1D04).withOpacity(0.6))),
-                  Text(courier['eta']!,
+                  Text(courier['eta']?.toString() ?? '3–5 Business Days',
                       style: GoogleFonts.poppins(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -43,13 +43,11 @@ class CourierDeliveryView extends StatelessWidget {
                 ],
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: const Color(0xffD08C4A).withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                      color: const Color(0xffD08C4A), width: 1.2),
+                  border: Border.all(color: const Color(0xffD08C4A), width: 1.2),
                 ),
                 child: Row(
                   children: [
@@ -60,11 +58,13 @@ class CourierDeliveryView extends StatelessWidget {
                             shape: BoxShape.circle,
                             color: Color(0xffD08C4A))),
                     const SizedBox(width: 6),
-                    Text("Dispatched",
-                        style: GoogleFonts.poppins(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xff5E1D04))),
+                    Text(
+                      currentStatus,
+                      style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xff5E1D04)),
+                    ),
                   ],
                 ),
               ),
@@ -72,14 +72,14 @@ class CourierDeliveryView extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // ── Order timeline
+          // Passes live tracking string straight to timeline steps logic
           OrderTimeline(
             isCourier: true,
-            companyName: courier['company']!,
+            companyName: courier['company']?.toString() ?? 'Courier',
+            currentStatus: currentStatus,
           ),
           const SizedBox(height: 20),
 
-          // ── Tracking ID card
           const SectionTitle(
               title: "Tracking Information",
               icon: Icons.local_shipping_outlined),
@@ -99,7 +99,6 @@ class CourierDeliveryView extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Courier name
                 Row(
                   children: [
                     Container(
@@ -115,7 +114,7 @@ class CourierDeliveryView extends StatelessWidget {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(courier['company']!,
+                        Text(courier['company']?.toString() ?? 'Processing Partner',
                             style: GoogleFonts.poppins(
                                 fontSize: 17,
                                 fontWeight: FontWeight.bold,
@@ -123,8 +122,7 @@ class CourierDeliveryView extends StatelessWidget {
                         Text("Courier Service",
                             style: GoogleFonts.poppins(
                                 fontSize: 12,
-                                color: const Color(0xff5E1D04)
-                                    .withOpacity(0.55))),
+                                color: const Color(0xff5E1D04).withOpacity(0.55))),
                       ],
                     ),
                   ],
@@ -133,26 +131,23 @@ class CourierDeliveryView extends StatelessWidget {
                 const Divider(color: Color(0xffD08C4A), thickness: 0.6),
                 const SizedBox(height: 14),
 
-                // Tracking ID with copy button
                 Text("Tracking ID",
                     style: GoogleFonts.poppins(
                         fontSize: 13,
                         color: const Color(0xff5E1D04).withOpacity(0.6))),
                 const SizedBox(height: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   decoration: BoxDecoration(
                     color: const Color(0xffD08C4A).withOpacity(0.12),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                        color: const Color(0xffD08C4A).withOpacity(0.4)),
+                    border: Border.all(color: const Color(0xffD08C4A).withOpacity(0.4)),
                   ),
                   child: Row(
                     children: [
                       Expanded(
                         child: Text(
-                          courier['trackingId']!,
+                          courier['trackingId']?.toString() ?? 'Awaiting tracking ID',
                           style: GoogleFonts.poppins(
                               fontSize: 17,
                               fontWeight: FontWeight.bold,
@@ -162,14 +157,15 @@ class CourierDeliveryView extends StatelessWidget {
                       ),
                       GestureDetector(
                         onTap: () {
-                          Clipboard.setData(
-                              ClipboardData(text: courier['trackingId']!));
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBarHelper.styledSnack("Tracking ID copied!"),
-                          );
+                          final trackingText = courier['trackingId']?.toString() ?? '';
+                          if (trackingText.isNotEmpty) {
+                            Clipboard.setData(ClipboardData(text: trackingText));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBarHelper.styledSnack("Tracking ID copied!"),
+                            );
+                          }
                         },
-                        child: const Icon(Icons.copy_rounded,
-                            color: Color(0xffD08C4A), size: 22),
+                        child: const Icon(Icons.copy_rounded, color: Color(0xffD08C4A), size: 22),
                       ),
                     ],
                   ),
@@ -178,14 +174,13 @@ class CourierDeliveryView extends StatelessWidget {
                 InfoRowWidget(
                     icon: Icons.access_time_rounded,
                     label: "ETA",
-                    value: courier['eta']!),
+                    value: courier['eta']?.toString() ?? '3–5 Business Days'),
                 InfoRowWidget(
                     icon: Icons.support_agent_rounded,
                     label: "Hotline",
-                    value: courier['hotline']!),
+                    value: courier['hotline']?.toString() ?? 'Contact Support'),
                 const SizedBox(height: 10),
 
-                // Track on courier website note
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -194,16 +189,14 @@ class CourierDeliveryView extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.info_outline,
-                          color: Color(0xffD08C4A), size: 18),
+                      const Icon(Icons.info_outline, color: Color(0xffD08C4A), size: 18),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          "Use your tracking ID on the ${courier['company']} website or app to track your shipment.",
+                          "Use your tracking ID on the ${courier['company'] ?? 'courier'} website to track your shipment.",
                           style: GoogleFonts.poppins(
                               fontSize: 12,
-                              color:
-                                  const Color(0xff5E1D04).withOpacity(0.7)),
+                              color: const Color(0xff5E1D04).withOpacity(0.7)),
                         ),
                       ),
                     ],
@@ -214,14 +207,11 @@ class CourierDeliveryView extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // ── Delivery address
-          const SectionTitle(
-              title: "Delivery Address", icon: Icons.location_on_outlined),
+          const SectionTitle(title: "Delivery Address", icon: Icons.location_on_outlined),
           const SizedBox(height: 10),
           DeliveryAddressCard(deliveryAddress: deliveryAddress),
           const SizedBox(height: 24),
 
-          // ── Back home button
           const BackToHomeButton(),
           const SizedBox(height: 24),
         ],

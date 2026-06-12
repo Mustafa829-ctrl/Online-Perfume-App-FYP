@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "96343924525",
+    "project_id": "online-perfume-app-fyp",
+    "storage_bucket": "online-perfume-app-fyp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:96343924525:android:5fcb64840adb3f7adf7da4",
+        "android_client_info": {
+          "package_name": "com.example.online_perfume_app_fyp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA0XGeYe9Q6Fsrj8NbeG7dMqyjY1O68rfY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

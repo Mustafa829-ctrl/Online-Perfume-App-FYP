@@ -3,9 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:online_perfume_app_fyp/models/select_role_model.dart';
 import 'package:online_perfume_app_fyp/services/select_role_service.dart';
-import 'package:online_perfume_app_fyp/views/buyer/buyer_homescreen.dart';
+import 'package:online_perfume_app_fyp/views/admin/auth/admin_login_screen.dart';
+import 'package:online_perfume_app_fyp/views/buyer/buyer%20auth/buyer_login_screen.dart';
+import 'package:online_perfume_app_fyp/views/buyer/screens/buyer_homescreen.dart';
+import 'package:online_perfume_app_fyp/views/rider/auth/rider_login_screen.dart';
 import 'package:online_perfume_app_fyp/views/rider/rider_homescreen.dart';
-import 'package:online_perfume_app_fyp/models/admin_models.dart';
+import 'package:online_perfume_app_fyp/views/seller/seller%20auth/seller_login_screen.dart';
 import 'package:online_perfume_app_fyp/views/seller/seller_homescreen.dart';
 import 'admin/screens/admin_homescreen.dart';
 
@@ -25,14 +28,12 @@ class _SelectRoleState extends State<SelectRole> {
   Future<void> _onGetStarted() async {
     if (_selectedRole == null) return;
 
-    // ✅ Seller — direct to SellerHomescreen (temporary until auth)
-    // TODO: After auth → Seller Login Screen
-    // Flow: Seller registers → Admin verifies → Seller can login
+
     if (_selectedRole == 'seller') {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => const SellerHomeScreen(),
+          builder: (_) => const SellerLoginScreen(),
         ),
       );
       return;
@@ -52,10 +53,10 @@ class _SelectRoleState extends State<SelectRole> {
           targetScreen = const BuyerHomescreen();
           break;
         case 'rider':
-          targetScreen = const RiderHomeScreen();
+          targetScreen = const RiderLoginScreen();
           break;
         case 'admin':
-          targetScreen = const AdminHomeScreen();
+          targetScreen = const AdminLoginScreen();
           break;
         default:
           targetScreen = const BuyerHomescreen();

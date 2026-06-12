@@ -1,75 +1,135 @@
-import 'package:flutter/foundation.dart';
-import 'package:online_perfume_app_fyp/models/cart_item_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/cart_item_model.dart';
 
-class CartService extends ChangeNotifier {
-  // Singleton
-  static final CartService instance = CartService._internal();
-  CartService._internal();
+class CartService {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final String _collection = 'carts';
 
-  final List<CartItemModel> _items = [];
+  // ── CART OPERATIONS
 
-  List<CartItemModel> get items => List.unmodifiable(_items);
-
-  int get totalItemCount =>
-      _items.fold(0, (sum, item) => sum + item.quantity);
-
-  double get subtotal =>
-      _items.fold(0.0, (sum, item) => sum + item.totalPrice);
-
-  double get total => subtotal; // Can add tax/shipping logic here later
-
-  /// Adds item to cart. If it already exists (same name + volume), increments quantity.
-  void addItem({
+  /// Add to Cart
+  Future<void> addToCart({
+    required String buyerId,
+    required String productId,
     required String productName,
     required double price,
-    required String imagePath,
-    required String selectedVolume,
-  }) {
-    final existingIndex = _items.indexWhere(
-      (i) => i.productName == productName && i.selectedVolume == selectedVolume,
-    );
+    required int quantity,
+    required String sellerId,
+    String? imageUrl,
+  }) async {
+    try {
+      String cartItemId = '${buyerId}_$productId';
 
-    if (existingIndex != -1) {
-      _items[existingIndex].quantity++;
-    } else {
-      _items.add(CartItemModel(
-        productName: productName,
-        price: price,
-        imagePath: imagePath,
-        selectedVolume: selectedVolume,
-      ));
+      await _firestore
+          .collection(_collection)
+          .doc(buyerId)
+          .collection('items')
+          .doc(cartItemId)
+          .set({
+        'cartItemId': cartItemId,
+        'productId': productId,
+        'productName': productName,
+        'price': price,
+        'quantity': quantity,
+        'sellerId': sellerId,
+        'imageUrl': imageUrl ?? '',
+        'addedAt': DateTime.now().millisecondsSinceEpoch,
+      });
+    } catch (e) {
+      throw e.toString();
     }
-    notifyListeners();
   }
 
-  /// Increments the quantity of an existing item.
-  void incrementQuantity(int index) {
-    if (index < 0 || index >= _items.length) return;
-    _items[index].quantity++;
-    notifyListeners();
-  }
+  /// Get All Cart Items (Mapped to CartItemModel)
+  Future<List<CartItemModel>> getCartItems(String buyerId) async {
+    try {
+      QuerySnapshot snapshot = await _firestore
+          .collection(_collection)
+          .doc(buyerId)
+          .collection('items')
+          .orderBy('addedAt', descending: true)
+          .get();
 
-  /// Decrements the quantity. Removes item if quantity reaches 0.
-  void decrementQuantity(int index) {
-    if (index < 0 || index >= _items.length) return;
-    if (_items[index].quantity > 1) {
-      _items[index].quantity--;
-    } else {
-      _items.removeAt(index);
+      return snapshot.docs
+          .map((doc) => CartItemModel.fromJson(doc.data() as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      throw e.toString();
     }
-    notifyListeners();
   }
 
-  /// Removes an item entirely by index.
-  void removeItem(int index) {
-    if (index < 0 || index >= _items.length) return;
-    _items.removeAt(index);
-    notifyListeners();
+  /// Update Cart Item Quantity
+  Future<void> updateCartQuantity({
+    required String buyerId,
+    required String cartItemId,
+    required int newQuantity,
+  }) async {
+    try {
+      // Automatically clear item if quantity drops to zero
+      if (newQuantity <= 0) {
+        await removeFromCart(buyerId: buyerId, cartItemId: cartItemId);
+        return;
+      }
+
+      await _firestore
+          .collection(_collection)
+          .doc(buyerId)
+          .collection('items')
+          .doc(cartItemId)
+          .update({'quantity': newQuantity});
+    } catch (e) {
+      throw e.toString();
+    }
   }
 
-  /// Clears the entire cart.
-  void clearCart() {
-    _items.clear();
-    notifyListeners();
+  /// Remove from Cart
+  Future<void> removeFromCart({
+    required String buyerId,
+    required String cartItemId,
+  }) async {
+    try {
+      await _firestore
+          .collection(_collection)
+          .doc(buyerId)
+          .collection('items')
+          .doc(cartItemId)
+          .delete();
+    } catch (e) {
+      throw e.toString();
+    }
+  }
+
+  /// Clear Entire Cart
+  Future<void> clearCart(String buyerId) async {
+    try {
+      WriteBatch batch = _firestore.batch();
+      QuerySnapshot snapshot = await _firestore
+          .collection(_collection)
+          .doc(buyerId)
+          .collection('items')
+          .get();
+
+      for (var doc in snapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+    } catch (e) {
+      throw e.toString();
+    }
+  }
+
+  /// Get Cart Total Amount
+  Future<double> getCartTotal(String buyerId) async {
+    try {
+      List<CartItemModel> items = await getCartItems(buyerId);
+      double total = 0.0;
+
+      for (var item in items) {
+        total += item.totalPrice;
+      }
+      return total;
+    } catch (e) {
+      throw e.toString();
+    }
   }
 }
