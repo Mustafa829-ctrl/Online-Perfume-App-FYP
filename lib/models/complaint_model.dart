@@ -14,6 +14,7 @@ class ComplaintModel {
   final String? adminReply;
   final int? createdAt;
   final int? resolvedAt;
+  final String? imageUrl;
 
   ComplaintModel({
     this.docId,
@@ -31,6 +32,7 @@ class ComplaintModel {
     this.adminReply,
     this.createdAt,
     this.resolvedAt,
+    this.imageUrl = "",
   });
 
   factory ComplaintModel.fromJson(Map<String, dynamic> json) => ComplaintModel(
@@ -49,6 +51,7 @@ class ComplaintModel {
         adminReply: json["adminReply"],
         createdAt: json["createdAt"],
         resolvedAt: json["resolvedAt"],
+        imageUrl:   json["imageUrl"]
       );
 
   Map<String, dynamic> toJson(String docId) => {
@@ -67,5 +70,6 @@ class ComplaintModel {
         "adminReply": adminReply ?? "",
         "createdAt": createdAt,
         "resolvedAt": resolvedAt,
+        "imageUrl"  : imageUrl ?? ""
       };
 }

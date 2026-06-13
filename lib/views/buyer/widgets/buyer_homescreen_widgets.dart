@@ -63,11 +63,6 @@ class HomeSearchBar extends StatelessWidget {
               color: const Color(0xff5E1D04),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
-              Icons.tune_rounded,
-              color: Color(0xffF6B55E),
-              size: 24,
-            ),
           ),
         ),
       ],
@@ -163,7 +158,7 @@ class ProductHomeCard extends StatelessWidget {
         : (product.price ?? 0.0);
 
     return GestureDetector(
-      // ✅ Product detail — always accessible (guest allowed)
+      // Product detail — always accessible (guest allowed)
       onTap: () {
         Navigator.push(
           context,
@@ -280,7 +275,7 @@ class ProductHomeCard extends StatelessWidget {
               ],
             ),
 
-            // ✅ Wishlist button — Firestore stream + login guard
+            // Wishlist button — Firestore stream + login guard
             Positioned(
               top: 0,
               right: 0,

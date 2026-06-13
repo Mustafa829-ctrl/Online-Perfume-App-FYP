@@ -76,7 +76,7 @@ class _SelectRoleState extends State<SelectRole> {
     }
   }
 
-  // ✅ Kept for future use — shown after auth when seller is blocked/unverified
+  // Kept for future use — shown after auth when seller is blocked/unverified
   void _showVerificationErrorDialog(String title, String message) {
     showDialog(
       context: context,

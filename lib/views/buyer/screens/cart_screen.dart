@@ -5,8 +5,6 @@ import 'package:online_perfume_app_fyp/services/cart_service.dart';
 import 'package:online_perfume_app_fyp/models/cart_item_model.dart';
 import 'package:online_perfume_app_fyp/views/buyer/widgets/cart_widgets.dart';
 
-import '../widgets/bottom_navigation_bar.dart';
-
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
 
@@ -39,7 +37,6 @@ class _CartScreenState extends State<CartScreen> {
           _cartService.getCartItems(buyerId),
           _cartService.getCartTotal(buyerId),
         ]);
-
         _items = results[0] as List<CartItemModel>;
         _subtotal = results[1] as double;
       }
@@ -52,10 +49,7 @@ class _CartScreenState extends State<CartScreen> {
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 
@@ -63,7 +57,6 @@ class _CartScreenState extends State<CartScreen> {
     try {
       final String buyerId = _auth.currentUser?.uid ?? '';
       if (buyerId.isEmpty) return;
-
       setState(() => _isLoading = true);
       await _cartService.clearCart(buyerId);
       await _loadCart();
@@ -76,58 +69,54 @@ class _CartScreenState extends State<CartScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xff5E1D04)),
-          onPressed: () => Navigator.pop(context),
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator(color: Color(0xffD08C4A)));
+    }
+
+    if (_items.isEmpty) {
+      return const EmptyCartView();
+    }
+
+    return Column(
+      children: [
+        // Custom header with title and clear button (since parent app bar is fixed)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Shopping Cart',
+                style: GoogleFonts.playfairDisplay(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xff5E1D04)),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline_rounded, color: Color(0xff5E1D04)),
+                onPressed: _clearEntireCart,
+                tooltip: 'Clear cart',
+              ),
+            ],
+          ),
         ),
-        title: Text(
-          "Shopping Cart",
-          style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.w600, color: const Color(0xff5E1D04)),
-        ),
-        centerTitle: true,
-        actions: [
-          if (!_isLoading && _items.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.delete_outline_rounded, color: Color(0xff5E1D04)),
-              onPressed: _clearEntireCart,
-            ),
-        ],
-      ),
-      bottomNavigationBar: const CustomBottomNav(currentIndex: 2),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xffD08C4A)))
-          : _items.isEmpty
-          ? const EmptyCartView()
-          : Column(
-        children: [
-          Expanded(
-            child: RefreshIndicator(
-              color: const Color(0xffD08C4A),
-              onRefresh: _loadCart,
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                itemCount: _items.length,
-                itemBuilder: (context, index) {
-                  return CartItemWidget(
-                    item: _items[index],
-                    index: index,
-                    cartService: _cartService,
-                  );
-                },
+        Expanded(
+          child: RefreshIndicator(
+            color: const Color(0xffD08C4A),
+            onRefresh: _loadCart,
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _items.length,
+              itemBuilder: (context, index) => CartItemWidget(
+                item: _items[index],
+                index: index,
+                cartService: _cartService,
               ),
             ),
           ),
-          CartOrderSummary(
-            subtotal: _subtotal,
-            total: _subtotal,
-          ),
-        ],
-      ),
+        ),
+        CartOrderSummary(
+          subtotal: _subtotal,
+          total: _subtotal,
+        ),
+      ],
     );
   }
 }

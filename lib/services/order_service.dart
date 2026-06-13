@@ -486,12 +486,12 @@ class OrderService {
     }
   }
 
-  /// Get active order status history tracking for Buyer panel views
+  /// Get all orders for a specific buyer (by buyerId)
   Future<List<OrderModel>> getBuyerOrders(String buyerId) async {
     try {
       QuerySnapshot snapshot = await _firestore
           .collection(_collection)
-          .where('buyerName', isEqualTo: buyerId) // Or map against a separate buyerId field if tracking
+          .where('buyerId', isEqualTo: buyerId) 
           .orderBy('createdAt', descending: true)
           .get();
 

@@ -2,8 +2,11 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../services/cloudinary_service.dart';
+import '../../../services/user_service.dart';
+import '../../../models/user_model.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -13,231 +16,402 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final UserService _userService = UserService();
   final ImagePicker _picker = ImagePicker();
+
   bool _isEditing = false;
+  bool _isLoading = false;
   bool _isUploading = false;
-  String? _profileImageUrl;
+  UserModel? _userData;
+  File? _pickedImage;
+
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
-
-  User? get _user => _auth.currentUser;
+  late TextEditingController _addressController;
+  int _totalOrders = 0;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController();
     _phoneController = TextEditingController();
+    _addressController = TextEditingController();
+    _loadData();
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _addressController.dispose();
     super.dispose();
   }
 
-  // Pick and upload profile image
-  Future<void> _uploadProfileImage() async {
-    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile == null) return;
-
-    setState(() => _isUploading = true);
-
-    final String? imageUrl = await CloudinaryService.uploadImage(File(pickedFile.path));
-
-    setState(() => _isUploading = false);
-
-    if (imageUrl == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Upload failed. Please try again.')),
-      );
-      return;
+  Future<void> _loadData() async {
+    try {
+      final user = await _userService.getCurrentUser();
+      setState(() {
+        _userData = user;
+        _nameController.text = user.name ?? '';
+        _phoneController.text = user.phone ?? '';
+        _addressController.text = user.address ?? '';
+      });
+      await _loadOrderCount();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading profile: $e'), backgroundColor: Colors.red),
+        );
+      }
     }
+  }
 
-    // Save URL to Firestore
-    await FirebaseFirestore.instance.collection('users').doc(_user!.uid).update({
-      'profileImage': imageUrl,
-    });
+  Future<void> _loadOrderCount() async {
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return;
+      final ordersSnapshot = await FirebaseFirestore.instance
+          .collection('orders')
+          .where('buyerId', isEqualTo: userId)
+          .get();
+      setState(() => _totalOrders = ordersSnapshot.docs.length);
+    } catch (_) {}
+  }
 
-    setState(() => _profileImageUrl = imageUrl);
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final picked = await _picker.pickImage(source: source, imageQuality: 80, maxWidth: 600);
+      if (picked != null) setState(() => _pickedImage = File(picked.path));
+    } catch (e) {
+      _showError('Could not pick image: $e');
+    }
+  }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Profile picture updated!')),
+  void _showImagePickerSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 30),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
+            const SizedBox(height: 16),
+            Text('Update Profile Photo', style: GoogleFonts.playfairDisplay(fontSize: 17, fontWeight: FontWeight.bold, color: const Color(0xff5E1D04))),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                      _pickImage(ImageSource.camera);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      decoration: BoxDecoration(color: const Color(0xFFFFF3CD), borderRadius: BorderRadius.circular(14)),
+                      child: Column(children: [
+                        const Icon(Icons.camera_alt_outlined, color: Color(0xffD08C4A), size: 30),
+                        const SizedBox(height: 8),
+                        Text('Camera', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xff5E1D04))),
+                      ]),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                      _pickImage(ImageSource.gallery);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      decoration: BoxDecoration(color: const Color(0xFFE3F2FD), borderRadius: BorderRadius.circular(14)),
+                      child: Column(children: [
+                        const Icon(Icons.photo_library_outlined, color: Color(0xff42A5F5), size: 30),
+                        const SizedBox(height: 8),
+                        Text('Gallery', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xff5E1D04))),
+                      ]),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  // Save profile changes (name, phone)
-  Future<void> _saveProfile() async {
+  Future<void> _saveChanges() async {
     if (_nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Name cannot be empty')),
-      );
+      _showError('Name cannot be empty');
       return;
     }
+    setState(() => _isLoading = true);
 
-    final Map<String, dynamic> updateData = {
-      'name': _nameController.text.trim(),
-      if (_phoneController.text.trim().isNotEmpty) 'phone': _phoneController.text.trim(),
-    };
+    String? uploadedImageUrl;
+    if (_pickedImage != null) {
+      setState(() => _isUploading = true);
+      uploadedImageUrl = await CloudinaryService.uploadImage(_pickedImage!);
+      setState(() => _isUploading = false);
+      if (uploadedImageUrl == null) _showError('Image upload failed. Profile saved without new photo.');
+    }
 
-    await FirebaseFirestore.instance.collection('users').doc(_user!.uid).update(updateData);
+    try {
+      await _userService.updateUserProfile(
+        name: _nameController.text.trim(),
+        phone: _phoneController.text.trim(),
+        address: _addressController.text.trim(),
+        profileImageUrl: uploadedImageUrl ?? _userData?.profileImageUrl,
+      );
+      setState(() {
+        _isLoading = false;
+        _isEditing = false;
+        _pickedImage = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Profile updated successfully'), backgroundColor: const Color(0xff66BB6A)),
+      );
+      await _loadData();
+    } catch (e) {
+      setState(() => _isLoading = false);
+      _showError(e.toString());
+    }
+  }
 
-    setState(() => _isEditing = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Profile updated!')),
+  void _showError(String msg) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg), backgroundColor: Colors.red.shade400),
+      );
+    }
+  }
+
+  Widget _buildAvatar() {
+    final String? imageUrl = _pickedImage != null
+        ? null
+        : (_userData?.profileImageUrl != null && _userData!.profileImageUrl!.isNotEmpty ? _userData!.profileImageUrl : null);
+    final initials = (_userData?.name ?? 'U').isNotEmpty ? (_userData?.name ?? 'U')[0].toUpperCase() : 'U';
+
+    return Stack(
+      children: [
+        CircleAvatar(
+          radius: 50,
+          backgroundColor: const Color(0xffD08C4A),
+          backgroundImage: _pickedImage != null
+              ? FileImage(_pickedImage!)
+              : (imageUrl != null ? NetworkImage(imageUrl) as ImageProvider : null),
+          child: (_pickedImage == null && imageUrl == null)
+              ? Text(initials, style: GoogleFonts.playfairDisplay(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.white))
+              : null,
+        ),
+        if (_isEditing)
+          Positioned(
+            bottom: 0,
+            right: 0,
+            child: GestureDetector(
+              onTap: _showImagePickerSheet,
+              child: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: const Color(0xff5E1D04),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+                child: _isUploading
+                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.camera_alt_outlined, color: Colors.white, size: 16),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Profile'),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(_isEditing ? Icons.close : Icons.edit),
-            onPressed: () {
-              if (_isEditing) {
-                // Cancel edit – reset controllers
-                _nameController.clear();
-                _phoneController.clear();
-              }
-              setState(() => _isEditing = !_isEditing);
-            },
-          ),
-          if (_isEditing)
-            TextButton(
-              onPressed: _saveProfile,
-              child: const Text('Save'),
-            ),
-        ],
-      ),
-      body: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('users')
-            .doc(_user?.uid)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || !snapshot.data!.exists) {
-            return const Center(child: Text('User data not found'));
-          }
+    if (_userData == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-          final userData = snapshot.data!.data() as Map<String, dynamic>;
-          final String name = userData['name'] ?? 'No Name';
-          final String phone = userData['phone'] ?? '';
-          final String storedImageUrl = userData['profileImage'] ?? '';
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        children: [
+          const SizedBox(height: 10),
+          Center(child: _buildAvatar()),
+          const SizedBox(height: 12),
+          Text(_userData?.name ?? '', style: GoogleFonts.playfairDisplay(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xff5E1D04))),
+          Text(_userData?.email ?? '', style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xffD08C4A), fontWeight: FontWeight.w500)),
+          const SizedBox(height: 20),
 
-          // Update controllers and local image URL
-          if (_nameController.text.isEmpty && name.isNotEmpty) {
-            _nameController.text = name;
-          }
-          if (_phoneController.text.isEmpty && phone.isNotEmpty) {
-            _phoneController.text = phone;
-          }
-          if (_profileImageUrl == null && storedImageUrl.isNotEmpty) {
-            _profileImageUrl = storedImageUrl;
-          }
-
-          return SingleChildScrollView(
-            child: Column(
+          // Stats row
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(color: const Color(0xFFFFF3CD), borderRadius: BorderRadius.circular(14)),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                // Profile picture section – no asset, just icon fallback
-                Stack(
-                  children: [
-                    // Avatar: if image URL exists, show network image; else show icon
-                    CircleAvatar(
-                      radius: 60,
-                      backgroundColor: Colors.grey.shade200,
-                      child: _profileImageUrl != null
-                          ? ClipOval(
-                        child: Image.network(
-                          _profileImageUrl!,
-                          width: 120,
-                          height: 120,
-                          fit: BoxFit.cover,
-                        ),
-                      )
-                          : const Icon(Icons.person, size: 60, color: Colors.grey),
-                    ),
-                    // Camera icon overlay (always visible, but you can restrict to edit mode if you want)
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: GestureDetector(
-                        onTap: _isUploading ? null : _uploadProfileImage,
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: const BoxDecoration(
-                            color: Colors.blue,
-                            shape: BoxShape.circle,
-                          ),
-                          child: _isUploading
-                              ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                              : const Icon(Icons.camera_alt, size: 20, color: Colors.white),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-
-                // Editable fields or view mode
-                if (_isEditing) ...[
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Column(
-                      children: [
-                        TextField(
-                          controller: _nameController,
-                          decoration: const InputDecoration(
-                            labelText: 'Name',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _phoneController,
-                          decoration: const InputDecoration(
-                            labelText: 'Phone',
-                            border: OutlineInputBorder(),
-                          ),
-                          keyboardType: TextInputType.phone,
-                        ),
-                      ],
-                    ),
-                  ),
-                ] else ...[
-                  // View mode: you can use your existing ProfileHeader or simple text
-                  const SizedBox(height: 10),
-                  Text(
-                    name,
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  if (phone.isNotEmpty)
-                    Text(
-                      phone,
-                      style: const TextStyle(fontSize: 16, color: Colors.grey),
-                    ),
-                  // Add any other profile fields you have (email, address, etc.)
-                ],
+                _StatItem(label: 'Orders', value: '$_totalOrders'),
+                _VerticalDivider(),
+                _StatItem(label: 'Wishlist', value: '0'), // fetch wishlist count if needed
+                _VerticalDivider(),
+                _StatItem(label: 'Member Since', value: _userData?.createdAt != null
+                    ? '${DateTime.fromMillisecondsSinceEpoch(_userData!.createdAt!).day}/${DateTime.fromMillisecondsSinceEpoch(_userData!.createdAt!).month}/${DateTime.fromMillisecondsSinceEpoch(_userData!.createdAt!).year}'
+                    : 'New'),
               ],
             ),
-          );
-        },
+          ),
+          const SizedBox(height: 24),
+
+          // Personal Info Section
+          _SectionTitle(title: 'Personal Information'),
+          const SizedBox(height: 12),
+          _ProfileField(label: 'Full Name', controller: _nameController, icon: Icons.person_outline, isEditing: _isEditing),
+          const SizedBox(height: 12),
+          _ProfileField(
+            label: 'Email Address',
+            controller: TextEditingController(text: _userData?.email ?? ''),
+            icon: Icons.email_outlined,
+            isEditing: false,
+            enabled: false,
+          ),
+          const SizedBox(height: 12),
+          _ProfileField(label: 'Phone Number', controller: _phoneController, icon: Icons.phone_outlined, isEditing: _isEditing, keyboardType: TextInputType.phone),
+          const SizedBox(height: 12),
+          _ProfileField(label: 'Address', controller: _addressController, icon: Icons.location_on_outlined, isEditing: _isEditing),
+          const SizedBox(height: 24),
+
+          if (_isEditing) ...[
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : _saveChanges,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xffD08C4A),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                child: _isLoading
+                    ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : Text('Save Changes', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
+              ),
+            ),
+            TextButton(
+              onPressed: () => setState(() {
+                _isEditing = false;
+                _pickedImage = null;
+                _nameController.text = _userData?.name ?? '';
+                _phoneController.text = _userData?.phone ?? '';
+                _addressController.text = _userData?.address ?? '';
+              }),
+              child: Text('Cancel', style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade500)),
+            ),
+          ] else ...[
+            // Edit button if not editing (optional, can also be placed in app bar)
+            // But the parent app bar already has an "Edit" action? We'll keep the edit button inside the profile.
+            // To keep consistency, add an edit button at the bottom of the profile when not editing.
+            Center(
+              child: TextButton.icon(
+                onPressed: () => setState(() => _isEditing = true),
+                icon: const Icon(Icons.edit, color: Color(0xffD08C4A)),
+                label: Text('Edit Profile', style: GoogleFonts.poppins(color: const Color(0xffD08C4A))),
+              ),
+            ),
+          ],
+          const SizedBox(height: 30),
+        ],
       ),
+    );
+  }
+}
+
+// Reusable stat item (same as before)
+class _StatItem extends StatelessWidget {
+  final String label, value;
+  const _StatItem({required this.label, required this.value});
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [
+      Text(value, style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xff5E1D04))),
+      Text(label, style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey.shade500)),
+    ]);
+  }
+}
+
+class _VerticalDivider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(width: 1, height: 30, color: const Color(0xffD08C4A).withOpacity(0.3));
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  final String title;
+  const _SectionTitle({required this.title});
+  @override
+  Widget build(BuildContext context) {
+    return Align(alignment: Alignment.centerLeft, child: Text(title, style: GoogleFonts.playfairDisplay(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xff5E1D04))));
+  }
+}
+
+class _ProfileField extends StatelessWidget {
+  final String label;
+  final TextEditingController controller;
+  final IconData icon;
+  final bool isEditing;
+  final TextInputType keyboardType;
+  final bool enabled;
+  const _ProfileField({
+    required this.label,
+    required this.controller,
+    required this.icon,
+    required this.isEditing,
+    this.keyboardType = TextInputType.text,
+    this.enabled = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.w500)),
+        const SizedBox(height: 4),
+        TextField(
+          controller: controller,
+          enabled: enabled && isEditing,
+          keyboardType: keyboardType,
+          style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xff5E1D04)),
+          decoration: InputDecoration(
+            prefixIcon: Icon(icon, color: const Color(0xffD08C4A), size: 18),
+            filled: true,
+            fillColor: enabled && isEditing ? const Color(0xFFF9F9F9) : Colors.transparent,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: enabled && isEditing ? const BorderSide(color: Color(0xFFEEEEEE)) : BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFEEEEEE)),
+            ),
+            disabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xffD08C4A)),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

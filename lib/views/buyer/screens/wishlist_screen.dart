@@ -3,9 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:online_perfume_app_fyp/models/wishlist_item_model.dart';
 import 'package:online_perfume_app_fyp/services/wishlist_service.dart';
-import 'package:online_perfume_app_fyp/views/buyer/widgets/bottom_navigation_bar.dart';
 import 'package:online_perfume_app_fyp/views/buyer/widgets/wishlist_widgets.dart';
-
 import '../buyer auth/buyer_login_screen.dart';
 
 class WishlistScreen extends StatefulWidget {
@@ -17,102 +15,62 @@ class WishlistScreen extends StatefulWidget {
 
 class _WishlistScreenState extends State<WishlistScreen> {
   final WishlistService _wishlistService = WishlistService();
-
-  // ✅ Check if user is logged in
   bool get _isLoggedIn => FirebaseAuth.instance.currentUser != null;
   String? get _userId => FirebaseAuth.instance.currentUser?.uid;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      bottomNavigationBar: const CustomBottomNav(currentIndex: 1),
-      body: SafeArea(
-        child: _isLoggedIn ? _buildWishlistContent() : _buildGuestState(),
-      ),
-    );
+    return _isLoggedIn ? _buildWishlistContent() : _buildGuestState();
   }
 
-  // ✅ Guest state — not logged in
   Widget _buildGuestState() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const WishlistHeader(),
-          const Spacer(),
-          Center(
-            child: Column(
-              children: [
-                Icon(Icons.lock_outline,
-                    size: 80,
-                    color: const Color(0xff5E1D04).withOpacity(0.2)),
-                const SizedBox(height: 16),
-                Text(
-                  'Login to view your wishlist',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    color: const Color(0xff5E1D04).withOpacity(0.5),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Save your favourite fragrances\nand access them anytime',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    color: Colors.grey.shade400,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: 180,
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const BuyerLoginScreen()),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xff5E1D04),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
-                      elevation: 4,
-                    ),
-                    child: Text(
-                      'Login',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xffD08C4A),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.lock_outline, size: 80, color: const Color(0xff5E1D04).withOpacity(0.2)),
+            const SizedBox(height: 16),
+            Text(
+              'Login to view your wishlist',
+              style: GoogleFonts.poppins(fontSize: 16, color: const Color(0xff5E1D04).withOpacity(0.5), fontWeight: FontWeight.w500),
             ),
-          ),
-          const Spacer(),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              'Save your favourite fragrances\nand access them anytime',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade400),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: 180,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const BuyerLoginScreen()),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xff5E1D04),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                child: Text('Login', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: const Color(0xffD08C4A))),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  // ✅ Logged in — show real Firestore wishlist via StreamBuilder
   Widget _buildWishlistContent() {
     return StreamBuilder<List<WishlistItemModel>>(
       stream: _wishlistService.getWishlistStream(_userId!),
       builder: (context, snapshot) {
-        // Loading state
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(color: Color(0xffD08C4A)),
-          );
+          return const Center(child: CircularProgressIndicator(color: Color(0xffD08C4A)));
         }
-
-        // Error state
         if (snapshot.hasError) {
           return Center(
             child: Padding(
@@ -120,14 +78,9 @@ class _WishlistScreenState extends State<WishlistScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.error_outline,
-                      size: 60, color: Colors.red.shade300),
+                  Icon(Icons.error_outline, size: 60, color: Colors.red.shade300),
                   const SizedBox(height: 16),
-                  Text(
-                    'Failed to load wishlist',
-                    style: GoogleFonts.poppins(
-                        fontSize: 14, color: Colors.grey.shade500),
-                  ),
+                  Text('Failed to load wishlist', style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey.shade500)),
                 ],
               ),
             ),
@@ -135,61 +88,46 @@ class _WishlistScreenState extends State<WishlistScreen> {
         }
 
         final items = snapshot.data ?? [];
-
-        // Empty state
         if (items.isEmpty) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          return Center(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const WishlistHeader(),
-                const Spacer(),
-                Center(
-                  child: Column(
-                    children: [
-                      Icon(Icons.favorite_border,
-                          size: 80,
-                          color: const Color(0xff5E1D04).withOpacity(0.2)),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Your wishlist is empty',
-                        style: GoogleFonts.poppins(
-                          fontSize: 18,
-                          color: const Color(0xff5E1D04).withOpacity(0.5),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Add fragrances you love to your wishlist',
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          color: Colors.grey.shade400,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Spacer(),
+                Icon(Icons.favorite_border, size: 80, color: const Color(0xff5E1D04).withOpacity(0.2)),
+                const SizedBox(height: 16),
+                Text('Your wishlist is empty', style: GoogleFonts.poppins(fontSize: 18, color: const Color(0xff5E1D04).withOpacity(0.5))),
+                const SizedBox(height: 8),
+                Text('Add fragrances you love to your wishlist', style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade400)),
               ],
             ),
           );
         }
 
-        // ✅ Show wishlist items
         return SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const WishlistHeader(),
-              const SizedBox(height: 8),
-              // Items count
-              Text(
-                '${items.length} item${items.length == 1 ? '' : 's'} saved',
-                style: GoogleFonts.poppins(
-                    fontSize: 13, color: Colors.grey.shade500),
+              // Custom header (since parent app bar is fixed)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('My Wishlist', style: GoogleFonts.playfairDisplay(fontSize: 26, fontWeight: FontWeight.bold, color: const Color(0xff5E1D04))),
+                      Text('Your saved fragrances', style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade500)),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(color: const Color(0xFFFFF3CD), borderRadius: BorderRadius.circular(12)),
+                    child: const Icon(Icons.favorite, color: Color(0xff5E1D04), size: 22),
+                  ),
+                ],
               ),
+              const SizedBox(height: 8),
+              Text('${items.length} item${items.length == 1 ? '' : 's'} saved', style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade500)),
               const SizedBox(height: 20),
               ListView.separated(
                 shrinkWrap: true,
@@ -199,8 +137,6 @@ class _WishlistScreenState extends State<WishlistScreen> {
                 itemBuilder: (context, index) {
                   final firstIndex = index * 2;
                   final secondIndex = firstIndex + 1;
-
-                  // Every 3rd row is large
                   if (index % 3 == 2) {
                     return WishlistItemCard(
                       item: items[firstIndex],
@@ -208,7 +144,6 @@ class _WishlistScreenState extends State<WishlistScreen> {
                       onRemove: () => _removeItem(items[firstIndex]),
                     );
                   }
-
                   return Row(
                     children: [
                       Expanded(
@@ -245,22 +180,16 @@ class _WishlistScreenState extends State<WishlistScreen> {
     );
   }
 
-  // ✅ Remove item from Firestore wishlist
   Future<void> _removeItem(WishlistItemModel item) async {
     try {
-      await _wishlistService.removeFromWishlist(
-        buyerId: _userId!,
-        productId: item.productId ?? '',
-      );
+      await _wishlistService.removeFromWishlist(buyerId: _userId!, productId: item.productId ?? '');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(e.toString(),
-              style: GoogleFonts.poppins(fontSize: 13)),
+          content: Text(e.toString(), style: GoogleFonts.poppins(fontSize: 13)),
           backgroundColor: Colors.red.shade400,
           behavior: SnackBarBehavior.floating,
-          shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ));
       }
     }

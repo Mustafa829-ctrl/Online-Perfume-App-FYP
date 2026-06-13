@@ -8,10 +8,9 @@ import 'package:online_perfume_app_fyp/views/buyer/screens/profile_screen.dart';
 
 import '../buyer auth/buyer_change_password_screen.dart';
 import '../buyer auth/buyer_login_screen.dart';
+import 'buyer_complaints_screen.dart';
+import 'order_history_screen.dart';
 
-// TODO: Replace these with real screens once created
-// import 'package:online_perfume_app_fyp/views/buyer/screens/order_history_screen.dart';
-// import 'package:online_perfume_app_fyp/views/buyer/screens/complaints_screen.dart';
 
 class BuyerMenuBar extends StatelessWidget {
   const BuyerMenuBar({super.key});
@@ -28,7 +27,7 @@ class BuyerMenuBar extends StatelessWidget {
           StreamBuilder<DocumentSnapshot>(
             stream: currentUser != null
                 ? FirebaseFirestore.instance
-                .collection('users') // ✅ Fixed: 'buyers' → 'users'
+                .collection('users')
                 .doc(currentUser.uid)
                 .snapshots()
                 : const Stream.empty(),
@@ -41,9 +40,9 @@ class BuyerMenuBar extends StatelessWidget {
               }
               final data = snapshot.data!.data() as Map<String, dynamic>;
               return _buildRealHeader(
-                name: data['name'] ?? 'Guest', // ✅ Fixed: 'fullName' → 'name'
+                name: data['name'] ?? 'Guest',
                 email: data['email'] ?? '',
-                imageUrl: data['profileImageUrl'] ?? '', // ✅ Fixed field name
+                imageUrl: data['profileImageUrl'] ?? '',
               );
             },
           ),
@@ -66,44 +65,23 @@ class BuyerMenuBar extends StatelessWidget {
                       );
                     },
                   ),
-
-                  // ✅ Order History — navigate when screen is ready
+                  // orders
                   _MenuItem(
                     icon: Icons.receipt_long_outlined,
                     label: 'Order History',
                     onTap: () {
                       Navigator.pop(context);
-                      // TODO: Navigator.push(context, MaterialPageRoute(builder: (_) => OrderHistoryScreen()));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Coming soon!',
-                              style: GoogleFonts.poppins(fontSize: 13)),
-                          backgroundColor: const Color(0xffD08C4A),
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10)),
-                        ),
-                      );
+                       Navigator.push(context, MaterialPageRoute(builder: (_) => OrderHistoryScreen()));
                     },
                   ),
 
-                  // ✅ Complaints — navigate when screen is ready
+                  //  Complaints
                   _MenuItem(
                     icon: Icons.report_problem_outlined,
                     label: 'Complaints',
                     onTap: () {
                       Navigator.pop(context);
-                      // TODO: Navigator.push(context, MaterialPageRoute(builder: (_) => BuyerComplaintsScreen()));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Coming soon!',
-                              style: GoogleFonts.poppins(fontSize: 13)),
-                          backgroundColor: const Color(0xffD08C4A),
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10)),
-                        ),
-                      );
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => BuyerComplaintsScreen()));
                     },
                   ),
 
@@ -213,7 +191,7 @@ class BuyerMenuBar extends StatelessWidget {
                   Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(
-                        builder: (_) => const BuyerLoginScreen()),
+                        builder: (_) => const BuyerHomescreen()),
                         (route) => false,
                   );
                 }
