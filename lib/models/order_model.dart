@@ -26,6 +26,10 @@ class OrderModel {
   final String? trackingNumber;
   final int? clearedAt;
   final String? returnReason;
+  final String? productId;
+
+
+  final List<Map<String, dynamic>>? items;
 
   OrderModel({
     this.docId,
@@ -54,7 +58,9 @@ class OrderModel {
     this.courierName,
     this.trackingNumber,
     this.clearedAt,
-    this.returnReason
+    this.returnReason,
+    this.productId,
+    this.items,
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) => OrderModel(
@@ -85,6 +91,11 @@ class OrderModel {
     trackingNumber:       json["trackingNumber"],
     clearedAt:            json["clearedAt"],
     returnReason:         json["returnReason"],
+    productId:            json["productId"],
+    items: json["items"] != null
+        ? List<Map<String, dynamic>>.from(
+        (json["items"] as List).map((i) => Map<String, dynamic>.from(i)))
+        : null,
   );
 
   Map<String, dynamic> toJson(String docId) => {
@@ -96,7 +107,7 @@ class OrderModel {
     "productName":          productName,
     "quantity":             quantity ?? 1,
     "amount":               amount ?? 0,
-    "status":               status ?? "Assigned",
+    "status":               status ?? "Pending",
     "riderId":              riderId ?? "",
     "riderName":            riderName ?? "",
     "sellerId":             sellerId ?? "",
@@ -115,5 +126,7 @@ class OrderModel {
     "trackingNumber":       trackingNumber ?? "",
     "clearedAt":            clearedAt,
     "returnReason":         returnReason ?? "",
+    "productId":            productId ?? "",
+    "items":                items ?? [],
   };
 }

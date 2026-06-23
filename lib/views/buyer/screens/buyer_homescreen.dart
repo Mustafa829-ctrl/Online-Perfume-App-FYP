@@ -10,6 +10,7 @@ import 'package:online_perfume_app_fyp/views/buyer/screens/cart_screen.dart';
 import 'package:online_perfume_app_fyp/views/buyer/screens/wishlist_screen.dart';
 import 'package:online_perfume_app_fyp/views/buyer/screens/profile_screen.dart';
 import 'package:online_perfume_app_fyp/views/buyer/widgets/buyer_homescreen_widgets.dart';
+import '../../../services/user_auth_service.dart';
 import '../buyer auth/buyer_login_screen.dart';
 import 'menu_bar.dart';
 
@@ -23,6 +24,7 @@ class BuyerHomescreen extends StatefulWidget {
 class _BuyerHomescreenState extends State<BuyerHomescreen> {
   final CategoryService _categoryService = CategoryService();
   final ProductService _productService = ProductService();
+  final BuyerAuthService _buyerAuth = BuyerAuthService();
   final TextEditingController _searchFieldController = TextEditingController();
 
   bool _isCategoriesLoading = true;
@@ -32,17 +34,17 @@ class _BuyerHomescreenState extends State<BuyerHomescreen> {
   String _selectedCategory = 'All';
   String _searchQueryString = '';
 
-  int _selectedIndex = 0; // 0: Home, 1: Wishlist, 2: Cart, 3: Profile
+  int _selectedIndex = 0;
 
-  bool get _isLoggedIn => FirebaseAuth.instance.currentUser != null;
+  // Auth state
+  User? get _user => FirebaseAuth.instance.currentUser;
 
   // Cart count stream
   Stream<int> get _cartCountStream {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return Stream.value(0);
+    if (_user == null) return Stream.value(0);
     return FirebaseFirestore.instance
         .collection('carts')
-        .doc(user.uid)
+        .doc(_user!.uid)
         .collection('items')
         .snapshots()
         .map((snap) => snap.docs.length);
@@ -107,7 +109,7 @@ class _BuyerHomescreenState extends State<BuyerHomescreen> {
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Login Required'),
-        content: const Text('Please login to access wishlist, cart, and profile.'),
+        content: const Text('Please login first'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           ElevatedButton(
@@ -116,7 +118,7 @@ class _BuyerHomescreenState extends State<BuyerHomescreen> {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const BuyerLoginScreen()));
             },
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xffD08C4A)),
-            child: const Text('Login Now'),
+            child: const Text('Login'),
           ),
         ],
       ),
@@ -124,14 +126,26 @@ class _BuyerHomescreenState extends State<BuyerHomescreen> {
   }
 
   void _onTabTapped(int index) {
-    if (!_isLoggedIn && index != 0) {
+    if (index == 0) {
+      setState(() => _selectedIndex = index);
+      return;
+    }
+    // Check if user is logged in and has buyer role
+    // We'll do this asynchronously; for a quick guard, we check current user.
+    // But better to check role via FutureBuilder or await.
+    // We'll use a local method that checks and then navigates.
+    _guardNavigation(index);
+  }
+
+  Future<void> _guardNavigation(int index) async {
+    final isValid = await _buyerAuth.isValidBuyer();
+    if (!isValid) {
       _showLoginPrompt();
       return;
     }
     setState(() => _selectedIndex = index);
   }
 
-  // Build the home content (product grid)
   Widget _buildHomeContent() {
     return RefreshIndicator(
       color: const Color(0xffD08C4A),
@@ -143,7 +157,7 @@ class _BuyerHomescreenState extends State<BuyerHomescreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 10),
-            if (!_isLoggedIn)
+            if (_user == null)
               GestureDetector(
                 onTap: _showLoginPrompt,
                 child: Container(
@@ -161,11 +175,11 @@ class _BuyerHomescreenState extends State<BuyerHomescreen> {
                       SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'Login to add to cart, wishlist & place orders',
+                          'Please Login First',
                           style: TextStyle(fontSize: 13, color: Color(0xff5E1D04)),
                         ),
                       ),
-                      Text('Login →', style: TextStyle(fontWeight: FontWeight.bold)),
+                      Text('Login ', style: TextStyle(fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),
@@ -194,7 +208,7 @@ class _BuyerHomescreenState extends State<BuyerHomescreen> {
                 final product = _filteredProducts[index];
                 return ProductHomeCard(
                   product: product,
-                  isLoggedIn: _isLoggedIn,
+                  isLoggedIn: _user != null,
                   onLoginRequired: _showLoginPrompt,
                 );
               },
@@ -208,62 +222,71 @@ class _BuyerHomescreenState extends State<BuyerHomescreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Text(
-          _selectedIndex == 0 ? 'Buyer Home' : _selectedIndex == 1 ? 'My Wishlist' : _selectedIndex == 2 ? 'Shopping Cart' : 'My Profile',
-          style: GoogleFonts.poppins(fontSize: 22, color: const Color(0xff5E1D04), fontWeight: FontWeight.w600),
-        ),
-        centerTitle: true,
-        leading: _isLoggedIn
-            ? Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu, color: Color(0xff5E1D04)),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        )
-            : null,
-      ),
-      drawer: _isLoggedIn ? const BuyerMenuBar() : null,
-      body: _selectedIndex == 0
-          ? _buildHomeContent()
-          : _selectedIndex == 1
-          ? const WishlistScreen()
-          : _selectedIndex == 2
-          ? const CartScreen()
-          : const ProfileScreen(),
-      bottomNavigationBar: StreamBuilder<int>(
-        stream: _cartCountStream,
-        initialData: 0,
-        builder: (context, snapshot) {
-          final cartCount = snapshot.data ?? 0;
-          return BottomNavigationBar(
-            currentIndex: _selectedIndex,
-            onTap: _onTabTapped,
-            type: BottomNavigationBarType.fixed,
-            selectedItemColor: const Color(0xffD08C4A),
-            unselectedItemColor: Colors.grey,
-            items: [
-              const BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
-              const BottomNavigationBarItem(icon: Icon(Icons.favorite_border), activeIcon: Icon(Icons.favorite), label: 'Wishlist'),
-              BottomNavigationBarItem(
-                icon: _CartIcon(cartCount: cartCount, isLoggedIn: _isLoggedIn),
-                activeIcon: _CartIcon(cartCount: cartCount, isLoggedIn: _isLoggedIn, isActive: true),
-                label: 'Cart',
+    // Use StreamBuilder for auth changes
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      initialData: FirebaseAuth.instance.currentUser,
+      builder: (context, authSnapshot) {
+        final user = authSnapshot.data;
+        final bool isLoggedIn = user != null;
+
+        return Scaffold(
+          backgroundColor: Colors.white,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            title: Text(
+              _selectedIndex == 0 ? 'Buyer Home' : _selectedIndex == 1 ? 'My Wishlist' : _selectedIndex == 2 ? 'Shopping Cart' : 'My Profile',
+              style: GoogleFonts.poppins(fontSize: 22, color: const Color(0xff5E1D04), fontWeight: FontWeight.w600),
+            ),
+            centerTitle: true,
+            leading: isLoggedIn
+                ? Builder(
+              builder: (context) => IconButton(
+                icon: const Icon(Icons.menu, color: Color(0xff5E1D04)),
+                onPressed: () => Scaffold.of(context).openDrawer(),
               ),
-              const BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Profile'),
-            ],
-          );
-        },
-      ),
+            )
+                : null,
+          ),
+          drawer: isLoggedIn ? const BuyerMenuBar() : null,
+          body: _selectedIndex == 0
+              ? _buildHomeContent()
+              : _selectedIndex == 1
+              ? const WishlistScreen()
+              : _selectedIndex == 2
+              ? const CartScreen()
+              : const ProfileScreen(),
+          bottomNavigationBar: StreamBuilder<int>(
+            stream: _cartCountStream,
+            initialData: 0,
+            builder: (context, snapshot) {
+              final cartCount = snapshot.data ?? 0;
+              return BottomNavigationBar(
+                currentIndex: _selectedIndex,
+                onTap: _onTabTapped,
+                type: BottomNavigationBarType.fixed,
+                selectedItemColor: const Color(0xffD08C4A),
+                unselectedItemColor: Colors.grey,
+                items: [
+                  const BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
+                  const BottomNavigationBarItem(icon: Icon(Icons.favorite_border), activeIcon: Icon(Icons.favorite), label: 'Wishlist'),
+                  BottomNavigationBarItem(
+                    icon: _CartIcon(cartCount: cartCount, isLoggedIn: isLoggedIn),
+                    activeIcon: _CartIcon(cartCount: cartCount, isLoggedIn: isLoggedIn, isActive: true),
+                    label: 'Cart',
+                  ),
+                  const BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Profile'),
+                ],
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
 
-// Cart icon with badge (same as before)
 class _CartIcon extends StatelessWidget {
   final int cartCount;
   final bool isLoggedIn;

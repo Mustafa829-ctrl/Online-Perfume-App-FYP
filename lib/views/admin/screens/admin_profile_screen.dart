@@ -146,7 +146,7 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
         name: _nameController.text.trim(),
         phone: _phoneController.text.trim(),
         address: _addressController.text.trim(),
-        profileImage: _profileImageUrl, // 👈 Pass the uploaded URL
+        profileImage: _profileImageUrl,
       );
 
       // Refresh local data

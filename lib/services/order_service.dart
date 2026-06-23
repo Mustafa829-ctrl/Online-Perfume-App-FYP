@@ -15,7 +15,6 @@ class OrderService {
           .where('sellerId', isEqualTo: sellerId)
           .orderBy('createdAt', descending: true)
           .get();
-
       return snapshot.docs
           .map((doc) => OrderModel.fromJson(doc.data() as Map<String, dynamic>))
           .toList();
@@ -36,7 +35,6 @@ class OrderService {
           .where('status', isEqualTo: status)
           .orderBy('createdAt', descending: true)
           .get();
-
       return snapshot.docs
           .map((doc) => OrderModel.fromJson(doc.data() as Map<String, dynamic>))
           .toList();
@@ -45,7 +43,7 @@ class OrderService {
     }
   }
 
-  /// Update Order Status (Seller - Processing, Dispatched, etc.)
+  /// Update Order Status
   Future<void> updateOrderStatus({
     required String orderId,
     required String status,
@@ -58,17 +56,13 @@ class OrderService {
     try {
       Map<String, dynamic> data = {
         'status': status,
-        'updatedAt': DateTime
-            .now()
-            .millisecondsSinceEpoch,
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
       };
-
       if (riderId != null) data['riderId'] = riderId;
       if (riderName != null) data['riderName'] = riderName;
       if (deliveryType != null) data['deliveryType'] = deliveryType;
       if (courierName != null) data['courierName'] = courierName;
       if (trackingNumber != null) data['trackingNumber'] = trackingNumber;
-
       await _firestore.collection(_collection).doc(orderId).update(data);
     } catch (e) {
       throw e.toString();
@@ -84,9 +78,7 @@ class OrderService {
       await _firestore.collection(_collection).doc(orderId).update({
         'status': 'Cancelled',
         'notDeliveredReason': reason,
-        'updatedAt': DateTime
-            .now()
-            .millisecondsSinceEpoch,
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
       });
     } catch (e) {
       throw e.toString();
@@ -106,9 +98,7 @@ class OrderService {
         'riderId': riderId,
         'riderName': riderName,
         'status': 'Assigned',
-        'assignedAt': DateTime
-            .now()
-            .millisecondsSinceEpoch,
+        'assignedAt': DateTime.now().millisecondsSinceEpoch,
       });
     } catch (e) {
       throw e.toString();
@@ -123,7 +113,6 @@ class OrderService {
           .where('riderId', isEqualTo: riderId)
           .orderBy('createdAt', descending: true)
           .get();
-
       return snapshot.docs
           .map((doc) => OrderModel.fromJson(doc.data() as Map<String, dynamic>))
           .toList();
@@ -141,7 +130,6 @@ class OrderService {
           .where('status', isEqualTo: 'Delivered')
           .orderBy('deliveredAt', descending: true)
           .get();
-
       return snapshot.docs
           .map((doc) => OrderModel.fromJson(doc.data() as Map<String, dynamic>))
           .toList();
@@ -155,9 +143,7 @@ class OrderService {
     try {
       await _firestore.collection(_collection).doc(docId).update({
         'status': 'Accepted',
-        'updatedAt': DateTime
-            .now()
-            .millisecondsSinceEpoch,
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
       });
     } catch (e) {
       throw e.toString();
@@ -169,9 +155,7 @@ class OrderService {
     try {
       await _firestore.collection(_collection).doc(docId).update({
         'status': 'Picked',
-        'updatedAt': DateTime
-            .now()
-            .millisecondsSinceEpoch,
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
       });
     } catch (e) {
       throw e.toString();
@@ -183,9 +167,7 @@ class OrderService {
     try {
       await _firestore.collection(_collection).doc(docId).update({
         'status': 'In Transit',
-        'updatedAt': DateTime
-            .now()
-            .millisecondsSinceEpoch,
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
       });
     } catch (e) {
       throw e.toString();
@@ -197,12 +179,8 @@ class OrderService {
     try {
       await _firestore.collection(_collection).doc(docId).update({
         'status': 'Delivered',
-        'deliveredAt': DateTime
-            .now()
-            .millisecondsSinceEpoch,
-        'updatedAt': DateTime
-            .now()
-            .millisecondsSinceEpoch,
+        'deliveredAt': DateTime.now().millisecondsSinceEpoch,
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
       });
     } catch (e) {
       throw e.toString();
@@ -214,9 +192,7 @@ class OrderService {
     try {
       await _firestore.collection(_collection).doc(docId).update({
         'status': 'Rejected',
-        'updatedAt': DateTime
-            .now()
-            .millisecondsSinceEpoch,
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
       });
     } catch (e) {
       throw e.toString();
@@ -232,25 +208,24 @@ class OrderService {
       await _firestore.collection(_collection).doc(docId).update({
         'status': 'Not Delivered',
         'notDeliveredReason': reason,
-        'updatedAt': DateTime
-            .now()
-            .millisecondsSinceEpoch,
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
       });
     } catch (e) {
       throw e.toString();
     }
   }
-  /// Buyer/Seller submits return request
+
+  /// Submit Return Request
   Future<void> submitReturnRequest({
     required String docId,
     required String reason,
   }) async {
     try {
       await _firestore.collection(_collection).doc(docId).update({
-        'status':       'Returned',
+        'status': 'Returned',
         'returnReason': reason,
-        'returnedAt':   DateTime.now().millisecondsSinceEpoch,
-        'updatedAt':    DateTime.now().millisecondsSinceEpoch,
+        'returnedAt': DateTime.now().millisecondsSinceEpoch,
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
       });
     } catch (e) {
       throw e.toString();
@@ -266,7 +241,6 @@ class OrderService {
           .collection(_collection)
           .orderBy('createdAt', descending: true)
           .get();
-
       return snapshot.docs
           .map((doc) => OrderModel.fromJson(doc.data() as Map<String, dynamic>))
           .toList();
@@ -283,7 +257,6 @@ class OrderService {
           .where('status', isEqualTo: status)
           .orderBy('createdAt', descending: true)
           .get();
-
       return snapshot.docs
           .map((doc) => OrderModel.fromJson(doc.data() as Map<String, dynamic>))
           .toList();
@@ -300,7 +273,6 @@ class OrderService {
           .where('status', whereIn: ['Returned', 'Not Delivered', 'Cancelled'])
           .orderBy('createdAt', descending: true)
           .get();
-
       return snapshot.docs
           .map((doc) => OrderModel.fromJson(doc.data() as Map<String, dynamic>))
           .toList();
@@ -321,19 +293,16 @@ class OrderService {
     }
   }
 
-  /// Get Today's Orders (Admin / Seller)
+  /// Get Today's Orders
   Future<List<OrderModel>> getTodayOrders() async {
     try {
       final now = DateTime.now();
-      final startOfDay =
-          DateTime(now.year, now.month, now.day).millisecondsSinceEpoch;
-
+      final startOfDay = DateTime(now.year, now.month, now.day).millisecondsSinceEpoch;
       QuerySnapshot snapshot = await _firestore
           .collection(_collection)
           .where('createdAt', isGreaterThanOrEqualTo: startOfDay)
           .orderBy('createdAt', descending: true)
           .get();
-
       return snapshot.docs
           .map((doc) => OrderModel.fromJson(doc.data() as Map<String, dynamic>))
           .toList();
@@ -354,25 +323,21 @@ class OrderService {
     }
   }
 
-// ── PAYMENT MANAGEMENT (add these to your existing OrderService) ──────
+  // ── PAYMENT MANAGEMENT ──────
 
-  /// Rider marks buyer payment received (buyer paid cash to rider)
-  /// Called from RIDER panel
-  Future<void> markBuyerPaymentReceived(String docId) async {
+  /// Rider confirms payment received
+  Future<void> markBuyerPaymentReceived(String orderId) async {
     try {
-      await _firestore.collection(_collection).doc(docId).update({
+      await _firestore.collection(_collection).doc(orderId).update({
         'buyerPaymentStatus': 'Received',
-        'updatedAt': DateTime
-            .now()
-            .millisecondsSinceEpoch,
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
       });
     } catch (e) {
       throw e.toString();
     }
   }
 
-  /// Get all Delivered orders for a seller where buyer has paid
-  /// (buyerPaymentStatus == 'Received') — these show in seller payments screen
+  /// Get seller payments
   Future<List<OrderModel>> getSellerPayments(String sellerId) async {
     try {
       QuerySnapshot snapshot = await _firestore
@@ -381,7 +346,6 @@ class OrderService {
           .where('buyerPaymentStatus', isEqualTo: 'Received')
           .orderBy('deliveredAt', descending: true)
           .get();
-
       return snapshot.docs
           .map((doc) => OrderModel.fromJson(doc.data() as Map<String, dynamic>))
           .toList();
@@ -390,38 +354,28 @@ class OrderService {
     }
   }
 
-  /// Seller clears payment from RIDER
-  /// → riderPaymentStatus: 'Cleared', order status: 'Completed', clearedAt set
+  /// Clear rider payment
   Future<void> clearRiderPayment(String docId) async {
     try {
       await _firestore.collection(_collection).doc(docId).update({
         'riderPaymentStatus': 'Cleared',
         'status': 'Completed',
-        'clearedAt': DateTime
-            .now()
-            .millisecondsSinceEpoch,
-        'updatedAt': DateTime
-            .now()
-            .millisecondsSinceEpoch,
+        'clearedAt': DateTime.now().millisecondsSinceEpoch,
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
       });
     } catch (e) {
       throw e.toString();
     }
   }
 
-  /// Seller confirms remittance received from COURIER
-  /// → riderPaymentStatus: 'Cleared', order status: 'Completed', clearedAt set
+  /// Clear courier payment
   Future<void> clearCourierPayment(String docId) async {
     try {
       await _firestore.collection(_collection).doc(docId).update({
         'riderPaymentStatus': 'Cleared',
         'status': 'Completed',
-        'clearedAt': DateTime
-            .now()
-            .millisecondsSinceEpoch,
-        'updatedAt': DateTime
-            .now()
-            .millisecondsSinceEpoch,
+        'clearedAt': DateTime.now().millisecondsSinceEpoch,
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
       });
     } catch (e) {
       throw e.toString();
@@ -430,74 +384,173 @@ class OrderService {
 
   // ── BUYER SIDE ORDER OPERATIONS--------
 
-  /// Place Order from Checkout Screen
-  /// Maps active cart items to your OrderModel structure, posts them, and flushes the cart.
-  Future<void> placeOrder({
+  /// Place Order — Option B: one Firestore document for all cart items.
+  ///
+  /// All cart items are stored in the 'items' array inside a single order
+  /// document. This means one cancel call cancels the entire order
+  /// (all products) at once.
+  ///
+  /// Returns a Map with 'docId' and 'orderId' of the created order
+  /// so CheckoutScreen can pass them to OrderConfirmationScreen.
+  Future<Map<String, String>> placeOrder({
     required String buyerId,
     required String buyerName,
     required String buyerPhone,
     required String buyerAddress,
-    required List<Map<String, dynamic>> cartItems, // Raw items passed from your cart/state
+    required List<Map<String, dynamic>> cartItems,
   }) async {
-    final WriteBatch batch = _firestore.batch();
-    final int timestamp = DateTime.now().millisecondsSinceEpoch;
-
     try {
-      for (var item in cartItems) {
-        // Generate a clean distinct document path reference for each unique order item
-        DocumentReference orderDocRef = _firestore.collection(_collection).doc();
+      final int timestamp = DateTime.now().millisecondsSinceEpoch;
+      final DocumentReference orderDocRef =
+      _firestore.collection(_collection).doc();
+      final String docId = orderDocRef.id;
+      final String orderId =
+          'ORD-${timestamp.toString().substring(7)}-${docId.substring(0, 4).toUpperCase()}';
 
-        // 1. Map values directly to your custom OrderModel structure
-        OrderModel newOrder = OrderModel(
-          docId: orderDocRef.id,
-          orderId: 'ORD-${timestamp.toString().substring(7)}-${orderDocRef.id.substring(0, 3).toUpperCase()}',
-          buyerName: buyerName,
-          buyerPhone: buyerPhone,
-          buyerAddress: buyerAddress,
-          productName: item['productName'] ?? 'Perfume',
-          quantity: item['quantity'] ?? 1,
-          amount: ((item['price'] as num? ?? 0.0) * (item['quantity'] as int? ?? 1)).toInt(),
-          status: 'Pending', // Initial tracking bucket state before vendor assignment
-          sellerId: item['sellerId'] ?? '',
-          isPaid: false,
-          buyerPaymentStatus: 'Pending',
-          riderPaymentStatus: 'Pending',
-          deliveryType: 'Rider',
-          createdAt: timestamp,
-        );
+      // Build items array — one entry per cart item
+      final List<Map<String, dynamic>> items = cartItems.map((item) {
+        final int qty = (item['quantity'] as int?) ?? 1;
+        final double price = (item['price'] as num?)?.toDouble() ?? 0.0;
+        return {
+          'productId':   item['productId'] ?? '',
+          'productName': item['productName'] ?? '',
+          'sellerId':    item['sellerId'] ?? '',
+          'sellerName':  item['sellerName'] ?? '',
+          'quantity':    qty,
+          'price':       price,
+          'amount':      (price * qty).toInt(),
+        };
+      }).toList();
 
-        // Stage the order document creation inside our active batch operation
-        batch.set(orderDocRef, newOrder.toJson(orderDocRef.id));
+      // Calculate totals from items
+      final int totalAmount =
+      items.fold(0, (sum, i) => sum + ((i['amount'] as int?) ?? 0));
+      final int totalQuantity =
+      items.fold(0, (sum, i) => sum + ((i['quantity'] as int?) ?? 0));
 
-        // 2. Stage the deletion of this specific item from the buyer's cart document subcollection
-        DocumentReference cartItemDocRef = _firestore
+      // Use first item as summary fields for backward compat with
+      // rider/seller screens that read productName, sellerId directly
+      final firstItem = items.isNotEmpty ? items.first : <String, dynamic>{};
+
+      final OrderModel newOrder = OrderModel(
+        docId:              docId,
+        orderId:            orderId,
+        buyerId:            buyerId,
+        buyerName:          buyerName,
+        buyerPhone:         buyerPhone,
+        buyerAddress:       buyerAddress,
+        // summary fields — first item for backward compat
+        productName:        firstItem['productName'] as String? ?? '',
+        productId:          firstItem['productId'] as String? ?? '',
+        sellerId:           firstItem['sellerId'] as String? ?? '',
+        sellerName:         firstItem['sellerName'] as String? ?? '',
+        quantity:           totalQuantity,
+        amount:             totalAmount,
+        // full items list
+        items:              items,
+        status:             'Pending',
+        isPaid:             false,
+        buyerPaymentStatus: 'Pending',
+        riderPaymentStatus: 'Pending',
+        deliveryType:       'Rider',
+        createdAt:          timestamp,
+      );
+
+      // Single document write + cart clear in one batch
+      final WriteBatch batch = _firestore.batch();
+      batch.set(orderDocRef, newOrder.toJson(docId));
+
+      // Delete all cart items
+      for (final item in cartItems) {
+        final cartItemRef = _firestore
             .collection('carts')
             .doc(buyerId)
             .collection('items')
-            .doc(item['cartItemId']);
-
-        batch.delete(cartItemDocRef);
+            .doc(item['cartItemId'] as String? ?? '');
+        batch.delete(cartItemRef);
       }
 
-      // Execute all operations safely on the backend server atomically
       await batch.commit();
+
+      return {'docId': docId, 'orderId': orderId};
     } catch (e) {
       throw 'Failed to place order: ${e.toString()}';
     }
   }
 
-  /// Get all orders for a specific buyer (by buyerId)
+  /// Get all orders for a buyer
   Future<List<OrderModel>> getBuyerOrders(String buyerId) async {
     try {
-      QuerySnapshot snapshot = await _firestore
+      final snap = await _firestore
           .collection(_collection)
-          .where('buyerId', isEqualTo: buyerId) 
+          .where('buyerId', isEqualTo: buyerId)
           .orderBy('createdAt', descending: true)
           .get();
-
-      return snapshot.docs
-          .map((doc) => OrderModel.fromJson(doc.data() as Map<String, dynamic>))
+      return snap.docs
+          .map((doc) => OrderModel.fromJson(doc.data()))
           .toList();
+    } catch (e) {
+      throw e.toString();
+    }
+  }
+
+  /// Cancel rider dispatch — reverts to Processing
+  Future<void> cancelDispatch(String orderId) async {
+    try {
+      await _firestore.collection(_collection).doc(orderId).update({
+        'status':       'Processing',
+        'riderId':      '',
+        'riderName':    '',
+        'deliveryType': '',
+        'updatedAt':    DateTime.now().millisecondsSinceEpoch,
+      });
+    } catch (e) {
+      throw e.toString();
+    }
+  }
+
+  /// Get active orders count for a rider
+  Future<int> getRiderActiveOrdersCount(String riderId) async {
+    try {
+      final snap = await _firestore
+          .collection(_collection)
+          .where('riderId', isEqualTo: riderId)
+          .where('status', isEqualTo: 'Dispatched')
+          .get();
+      return snap.docs.length;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  /// Reorder — creates a fresh order from a previous one
+  Future<void> reorderItem({required OrderModel originalOrder}) async {
+    try {
+      final ref = _firestore.collection(_collection).doc();
+      final newOrderId =
+          'ORD-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+
+      final newOrder = OrderModel(
+        docId:       ref.id,
+        orderId:     newOrderId,
+        buyerId:     originalOrder.buyerId,
+        buyerName:   originalOrder.buyerName,
+        buyerPhone:  originalOrder.buyerPhone,
+        buyerAddress:originalOrder.buyerAddress,
+        productName: originalOrder.productName,
+        productId:   originalOrder.productId,
+        quantity:    originalOrder.quantity,
+        amount:      originalOrder.amount,
+        sellerId:    originalOrder.sellerId,
+        sellerName:  originalOrder.sellerName,
+        sellerPhone: originalOrder.sellerPhone,
+        items:       originalOrder.items,  // carry items forward
+        status:      'Pending',
+        isPaid:      false,
+        createdAt:   DateTime.now().millisecondsSinceEpoch,
+      );
+
+      await ref.set(newOrder.toJson(ref.id));
     } catch (e) {
       throw e.toString();
     }

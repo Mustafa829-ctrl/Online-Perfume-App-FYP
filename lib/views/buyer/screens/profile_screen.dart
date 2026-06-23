@@ -235,97 +235,101 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_userData == null) {
-      return const Center(child: CircularProgressIndicator());
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return const Center(child: Text('Please login to view your profile.'));
     }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        children: [
-          const SizedBox(height: 10),
-          Center(child: _buildAvatar()),
-          const SizedBox(height: 12),
-          Text(_userData?.name ?? '', style: GoogleFonts.playfairDisplay(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xff5E1D04))),
-          Text(_userData?.email ?? '', style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xffD08C4A), fontWeight: FontWeight.w500)),
-          const SizedBox(height: 20),
+    // ✅ Fixed: wrapped in Material to provide a Material ancestor for
+    // TextField widgets, since this screen has no Scaffold of its own
+    // (it's used as a tab body inside another screen's Scaffold).
+    return Material(
+      color: Colors.white,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          children: [
+            const SizedBox(height: 10),
+            Center(child: _buildAvatar()),
+            const SizedBox(height: 12),
+            Text(_userData?.name ?? '', style: GoogleFonts.playfairDisplay(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xff5E1D04))),
+            Text(_userData?.email ?? '', style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xffD08C4A), fontWeight: FontWeight.w500)),
+            const SizedBox(height: 20),
 
-          // Stats row
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            decoration: BoxDecoration(color: const Color(0xFFFFF3CD), borderRadius: BorderRadius.circular(14)),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _StatItem(label: 'Orders', value: '$_totalOrders'),
-                _VerticalDivider(),
-                _StatItem(label: 'Wishlist', value: '0'), // fetch wishlist count if needed
-                _VerticalDivider(),
-                _StatItem(label: 'Member Since', value: _userData?.createdAt != null
-                    ? '${DateTime.fromMillisecondsSinceEpoch(_userData!.createdAt!).day}/${DateTime.fromMillisecondsSinceEpoch(_userData!.createdAt!).month}/${DateTime.fromMillisecondsSinceEpoch(_userData!.createdAt!).year}'
-                    : 'New'),
-              ],
+            // Stats row
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(color: const Color(0xFFFFF3CD), borderRadius: BorderRadius.circular(14)),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _StatItem(label: 'Orders', value: '$_totalOrders'),
+                  _VerticalDivider(),
+                  _StatItem(label: 'Wishlist', value: '0'), // fetch wishlist count if needed
+                  _VerticalDivider(),
+                  _StatItem(label: 'Member Since', value: _userData?.createdAt != null
+                      ? '${DateTime.fromMillisecondsSinceEpoch(_userData!.createdAt!).day}/${DateTime.fromMillisecondsSinceEpoch(_userData!.createdAt!).month}/${DateTime.fromMillisecondsSinceEpoch(_userData!.createdAt!).year}'
+                      : 'New'),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-          // Personal Info Section
-          _SectionTitle(title: 'Personal Information'),
-          const SizedBox(height: 12),
-          _ProfileField(label: 'Full Name', controller: _nameController, icon: Icons.person_outline, isEditing: _isEditing),
-          const SizedBox(height: 12),
-          _ProfileField(
-            label: 'Email Address',
-            controller: TextEditingController(text: _userData?.email ?? ''),
-            icon: Icons.email_outlined,
-            isEditing: false,
-            enabled: false,
-          ),
-          const SizedBox(height: 12),
-          _ProfileField(label: 'Phone Number', controller: _phoneController, icon: Icons.phone_outlined, isEditing: _isEditing, keyboardType: TextInputType.phone),
-          const SizedBox(height: 12),
-          _ProfileField(label: 'Address', controller: _addressController, icon: Icons.location_on_outlined, isEditing: _isEditing),
-          const SizedBox(height: 24),
+            // Personal Info Section
+            _SectionTitle(title: 'Personal Information'),
+            const SizedBox(height: 12),
+            _ProfileField(label: 'Full Name', controller: _nameController, icon: Icons.person_outline, isEditing: _isEditing),
+            const SizedBox(height: 12),
+            _ProfileField(
+              label: 'Email Address',
+              controller: TextEditingController(text: _userData?.email ?? ''),
+              icon: Icons.email_outlined,
+              isEditing: false,
+              enabled: false,
+            ),
+            const SizedBox(height: 12),
+            _ProfileField(label: 'Phone Number', controller: _phoneController, icon: Icons.phone_outlined, isEditing: _isEditing, keyboardType: TextInputType.phone),
+            const SizedBox(height: 12),
+            _ProfileField(label: 'Address', controller: _addressController, icon: Icons.location_on_outlined, isEditing: _isEditing),
+            const SizedBox(height: 24),
 
-          if (_isEditing) ...[
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _saveChanges,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xffD08C4A),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            if (_isEditing) ...[
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _saveChanges,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xffD08C4A),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : Text('Save Changes', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
                 ),
-                child: _isLoading
-                    ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : Text('Save Changes', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
               ),
-            ),
-            TextButton(
-              onPressed: () => setState(() {
-                _isEditing = false;
-                _pickedImage = null;
-                _nameController.text = _userData?.name ?? '';
-                _phoneController.text = _userData?.phone ?? '';
-                _addressController.text = _userData?.address ?? '';
-              }),
-              child: Text('Cancel', style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade500)),
-            ),
-          ] else ...[
-            // Edit button if not editing (optional, can also be placed in app bar)
-            // But the parent app bar already has an "Edit" action? We'll keep the edit button inside the profile.
-            // To keep consistency, add an edit button at the bottom of the profile when not editing.
-            Center(
-              child: TextButton.icon(
-                onPressed: () => setState(() => _isEditing = true),
-                icon: const Icon(Icons.edit, color: Color(0xffD08C4A)),
-                label: Text('Edit Profile', style: GoogleFonts.poppins(color: const Color(0xffD08C4A))),
+              TextButton(
+                onPressed: () => setState(() {
+                  _isEditing = false;
+                  _pickedImage = null;
+                  _nameController.text = _userData?.name ?? '';
+                  _phoneController.text = _userData?.phone ?? '';
+                  _addressController.text = _userData?.address ?? '';
+                }),
+                child: Text('Cancel', style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade500)),
               ),
-            ),
+            ] else ...[
+              Center(
+                child: TextButton.icon(
+                  onPressed: () => setState(() => _isEditing = true),
+                  icon: const Icon(Icons.edit, color: Color(0xffD08C4A)),
+                  label: Text('Edit Profile', style: GoogleFonts.poppins(color: const Color(0xffD08C4A))),
+                ),
+              ),
+            ],
+            const SizedBox(height: 30),
           ],
-          const SizedBox(height: 30),
-        ],
+        ),
       ),
     );
   }

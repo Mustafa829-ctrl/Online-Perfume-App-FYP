@@ -11,9 +11,8 @@ class SelectRoleServices {
       RoleModel(
         id: 'buyer',
         title: 'Buyer',
-        subtitle: 'Shop Perfume',
+        subtitle: 'Shop Perfumes',
         icon: Icons.shopping_bag,
-        assetImage: 'assets/images/ads2.png',
         useAsset: true,
       ),
       RoleModel(
@@ -21,15 +20,13 @@ class SelectRoleServices {
         title: 'Seller',
         subtitle: 'Sell Product',
         icon: Icons.storefront_rounded,
-        assetImage: 'assets/images/seller.png',
         useAsset: true,
       ),
       RoleModel(
         id: 'rider',
-        title: 'A Rider',
+        title: 'Rider',
         subtitle: 'Deliver Order',
         icon: Icons.delivery_dining_rounded,
-        assetImage: 'assets/images/rider.jpg',
         useAsset: false,
       ),
       RoleModel(

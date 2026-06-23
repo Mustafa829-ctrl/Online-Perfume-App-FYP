@@ -21,6 +21,7 @@ class WishlistService {
           .collection(_collection)
           .doc(buyerId)
           .collection('items')
+
           .doc(wishlistItemId)
           .set({
         'docId':          wishlistItemId,

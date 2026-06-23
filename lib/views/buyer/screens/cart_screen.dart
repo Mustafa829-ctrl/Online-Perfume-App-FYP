@@ -67,6 +67,7 @@ class _CartScreenState extends State<CartScreen> {
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -79,7 +80,6 @@ class _CartScreenState extends State<CartScreen> {
 
     return Column(
       children: [
-        // Custom header with title and clear button (since parent app bar is fixed)
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           child: Row(

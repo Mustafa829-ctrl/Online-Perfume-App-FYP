@@ -7,8 +7,6 @@ class AdminAuthService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   /// Login Admin
-  /// RBAC: checks admins/ collection only
-  /// Admin accounts are pre-created manually in Firestore — no register screen
   Future<AdminModel> loginAdmin({
     required String email,
     required String password,
@@ -104,7 +102,7 @@ class AdminAuthService {
       if (user == null) throw 'No admin logged in.';
 
       DocumentSnapshot doc = await _firestore
-          .collection('admins')
+          .collection('admin')
           .doc(user.uid)
           .get();
 
@@ -125,7 +123,7 @@ class AdminAuthService {
       User? user = _auth.currentUser;
       if (user == null) throw 'No admin logged in.';
 
-      await _firestore.collection('admins').doc(user.uid).update({
+      await _firestore.collection('admin').doc(user.uid).update({
         'name': name,
         'phone': phone,
       });

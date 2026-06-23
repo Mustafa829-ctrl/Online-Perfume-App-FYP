@@ -5,9 +5,9 @@ import 'package:online_perfume_app_fyp/models/product_model.dart';
 import 'package:online_perfume_app_fyp/services/product_service.dart';
 import 'package:online_perfume_app_fyp/views/seller/screens/seller_add_product_screen.dart';
 import 'package:online_perfume_app_fyp/views/seller/screens/seller_edit_product_screen.dart';
+import 'package:online_perfume_app_fyp/views/seller/screens/seller_product_detail.dart';
 import '../../../models/category_model.dart';
 import '../../../services/category_service.dart';
-import '../../buyer/screens/product_details.dart';
 
 class SellerProductsScreen extends StatefulWidget {
   final SellerModel seller;
@@ -374,10 +374,10 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
                     await Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => ProductDetails(
-                          product: product,
-                          isLoggedIn: false,
-                          onLoginRequired: () {  },),
+                        builder: (_) => SellerProductDetailsScreen(
+                            product: product,
+                          seller: widget.seller,
+                        ),
                       ),
                     );
                     _initializeScreenData();

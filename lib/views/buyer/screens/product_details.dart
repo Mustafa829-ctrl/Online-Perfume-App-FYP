@@ -409,7 +409,8 @@ class _ProductDetailsState extends State<ProductDetails> {
                 color: const Color(0xff5E1D04),
                 fontWeight: FontWeight.w600)),
         centerTitle: true,
-        // ✅ Wishlist icon in app bar — Firestore stream
+
+        //  Wishlist icon in app bar
         actions: [
           widget.isLoggedIn
               ? StreamBuilder<DocumentSnapshot>(
@@ -573,37 +574,26 @@ class _ProductDetailsState extends State<ProductDetails> {
                       fontWeight: FontWeight.bold,
                       color: const Color(0xff5E1D04))),
               const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: widget.product.sizes!.map((sizeMap) {
-                  final isSelected =
-                      _selectedSize?['size'] == sizeMap['size'];
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 12),
-                    child: VolumeSelector(
-                      volume: sizeMap['size']?.toString() ?? '',
-                      isSelected: isSelected,
-                      onTap: () =>
-                          setState(() => _selectedSize = sizeMap),
-                    ),
-                  );
-                }).toList(),
-              ),
 
-              // Stock indicator for selected size
-              if (_selectedSize != null) ...[
-                const SizedBox(height: 8),
-                Text(
-                  'Stock: ${_selectedSize!['stock'] ?? 0}',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: (_selectedSize!['stock'] ?? 0) > 0
-                        ? Colors.grey.shade500
-                        : Colors.red.shade400,
-                  ),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: widget.product.sizes!.map((sizeMap) {
+                    final isSelected =
+                        _selectedSize?['size'] == sizeMap['size'];
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: VolumeSelector(
+                        volume: sizeMap['size']?.toString() ?? '',
+                        isSelected: isSelected,
+                        onTap: () =>
+                            setState(() => _selectedSize = sizeMap),
+                      ),
+                    );
+                  }).toList(),
                 ),
-              ],
-              const SizedBox(height: 20),
+              ),
             ],
 
             // ── Description

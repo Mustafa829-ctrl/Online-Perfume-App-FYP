@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:online_perfume_app_fyp/models/order_model.dart';
+import 'package:online_perfume_app_fyp/models/rider_model.dart';
 import 'package:online_perfume_app_fyp/services/order_service.dart';
+import 'package:online_perfume_app_fyp/services/rider_service.dart';
 
 class SellerOrderDetailScreen extends StatefulWidget {
   final OrderModel order;
@@ -13,6 +15,7 @@ class SellerOrderDetailScreen extends StatefulWidget {
 
 class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
   final OrderService _orderService = OrderService();
+  final RiderService _riderService = RiderService();
 
   bool isUpdating = false;
   late String _currentStatus;
@@ -89,102 +92,168 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
     }
   }
 
-  // ── Dispatch to Rider sheet
-  void _showDispatchToRiderSheet() {
-    final riderNameController  = TextEditingController();
-    final riderPhoneController = TextEditingController();
-    final bikeNumberController = TextEditingController();
+  // ── Cancel rider dispatch — revert to Processing
+  Future<void> _cancelDispatch() async {
+    try {
+      setState(() => isUpdating = true);
+      await _orderService.cancelDispatch(_order.docId ?? '');
+      setState(() {
+        _currentStatus = 'Processing';
+        isUpdating = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Dispatch cancelled — order reverted to Processing',
+              style: GoogleFonts.poppins(fontSize: 13)),
+          backgroundColor: Colors.red.shade400,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ));
+      }
+    } catch (e) {
+      setState(() => isUpdating = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(e.toString(), style: GoogleFonts.poppins(fontSize: 13)),
+          backgroundColor: Colors.red.shade400,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ));
+      }
+    }
+  }
 
+  void _showCancelDispatchDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Cancel Dispatch?',
+            style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: const Color(0xff5E1D04))),
+        content: Text(
+          'This will remove ${_order.riderName ?? 'the rider'} from this order and revert status to Processing.',
+          style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade600),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('No', style: GoogleFonts.poppins(color: Colors.grey.shade600)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _cancelDispatch();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade400,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: Text('Yes, Cancel', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Rider selection bottom sheet — replaces manual text entry
+  void _showRiderSelectionSheet() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 20,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-                child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(2)))),
-            const SizedBox(height: 16),
-            Text('Dispatch to Rider',
-                style: GoogleFonts.playfairDisplay(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xff5E1D04))),
-            const SizedBox(height: 16),
-            _SheetInputField(
-                controller: riderNameController,
-                hint: 'Rider Name',
-                icon: Icons.person_outline),
-            const SizedBox(height: 12),
-            _SheetInputField(
-                controller: riderPhoneController,
-                hint: 'Rider Phone Number',
-                icon: Icons.phone_outlined,
-                keyboardType: TextInputType.phone),
-            const SizedBox(height: 12),
-            _SheetInputField(
-                controller: bikeNumberController,
-                hint: 'Bike / Vehicle Number',
-                icon: Icons.two_wheeler_outlined),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: () {
-                  if (riderNameController.text.isNotEmpty &&
-                      riderPhoneController.text.isNotEmpty) {
-                    Navigator.pop(context);
-                    //  deliveryType: 'Rider' now passed
-                    _updateStatus('Dispatched', extra: {
-                      'riderName':    riderNameController.text.trim(),
-                      'riderId':      '',
-                      'deliveryType': 'Rider',
-                    });
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text('Please fill rider name and phone',
-                          style: GoogleFonts.poppins(fontSize: 13)),
-                      backgroundColor: Colors.red.shade400,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ));
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xffD08C4A),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    elevation: 0),
-                child: Text('Assign Rider',
-                    style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white)),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.4,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (context, scrollController) => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                  child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(2)))),
+              const SizedBox(height: 16),
+              Text('Select a Rider',
+                  style: GoogleFonts.playfairDisplay(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xff5E1D04))),
+              const SizedBox(height: 4),
+              Text('Tap a rider to dispatch this order',
+                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade500)),
+              const SizedBox(height: 16),
+
+              Expanded(
+                child: FutureBuilder<List<RiderModel>>(
+                  future: _riderService.getSellerRiders(_order.sellerId ?? ''),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator(color: Color(0xffD08C4A)));
+                    }
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Text('Error loading riders', style: GoogleFonts.poppins(fontSize: 13, color: Colors.red.shade400)),
+                      );
+                    }
+                    final riders = snapshot.data ?? [];
+                    if (riders.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.delivery_dining_outlined, size: 50, color: Colors.grey.shade300),
+                            const SizedBox(height: 10),
+                            Text('No riders found', style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade400)),
+                            const SizedBox(height: 4),
+                            Text('Add a rider from Rider Management', style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade400)),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return ListView.separated(
+                      controller: scrollController,
+                      itemCount: riders.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        final rider = riders[index];
+                        return _RiderSelectCard(
+                          rider: rider,
+                          orderService: _orderService,
+                          onTap: rider.isBlocked == true
+                              ? null
+                              : () {
+                            Navigator.pop(context);
+                            _updateStatus('Dispatched', extra: {
+                              'riderName':    rider.name ?? '',
+                              'riderId':      rider.docId ?? '',
+                              'deliveryType': 'Rider',
+                            });
+                          },
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 10),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // ── Dispatch to Courier sheet
+  // ── Dispatch to Courier sheet (unchanged)
   void _showDispatchToCourierSheet() {
     final courierNameController    = TextEditingController();
     final trackingNumberController = TextEditingController();
@@ -223,7 +292,6 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
                 style: GoogleFonts.poppins(
                     fontSize: 12, color: Colors.grey.shade500)),
             const SizedBox(height: 12),
-            // Buyer info box
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(12),
@@ -266,7 +334,6 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
                   if (courierNameController.text.isNotEmpty &&
                       trackingNumberController.text.isNotEmpty) {
                     Navigator.pop(context);
-                    //  all courier fields correctly passed
                     _updateStatus('Dispatched', extra: {
                       'deliveryType':    'Courier',
                       'courierName':     courierNameController.text.trim(),
@@ -301,7 +368,7 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
     );
   }
 
-  // ── Not Delivered sheet
+  // ── Not Delivered sheet (unchanged)
   void _showNotDeliveredSheet() {
     final reasonController = TextEditingController();
 
@@ -351,16 +418,13 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
                 fillColor: const Color(0xFFF9F9F9),
                 border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide:
-                    const BorderSide(color: Color(0xFFEEEEEE))),
+                    borderSide: const BorderSide(color: Color(0xFFEEEEEE))),
                 enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide:
-                    const BorderSide(color: Color(0xFFEEEEEE))),
+                    borderSide: const BorderSide(color: Color(0xFFEEEEEE))),
                 focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide:
-                    const BorderSide(color: Color(0xffD08C4A))),
+                    borderSide: const BorderSide(color: Color(0xffD08C4A))),
               ),
             ),
             const SizedBox(height: 20),
@@ -382,31 +446,22 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
                         isUpdating = false;
                       });
                       if (mounted) {
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(SnackBar(
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                           content: Text('Order marked as not delivered',
-                              style:
-                              GoogleFonts.poppins(fontSize: 13)),
+                              style: GoogleFonts.poppins(fontSize: 13)),
                           backgroundColor: Colors.red.shade400,
                           behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                              borderRadius:
-                              BorderRadius.circular(10)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ));
                       }
                     } catch (e) {
                       setState(() => isUpdating = false);
                       if (mounted) {
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(SnackBar(
-                          content: Text(e.toString(),
-                              style:
-                              GoogleFonts.poppins(fontSize: 13)),
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text(e.toString(), style: GoogleFonts.poppins(fontSize: 13)),
                           backgroundColor: Colors.red.shade400,
                           behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                              borderRadius:
-                              BorderRadius.circular(10)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ));
                       }
                     }
@@ -414,14 +469,11 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
                 },
                 style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red.shade400,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     elevation: 0),
                 child: Text('Confirm Not Delivered',
                     style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white)),
+                        fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
               ),
             ),
           ],
@@ -441,20 +493,15 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
         elevation: 0,
         leading: GestureDetector(
           onTap: () => Navigator.pop(context),
-          child: const Icon(Icons.arrow_back_ios,
-              color: Color(0xff5E1D04), size: 20),
+          child: const Icon(Icons.arrow_back_ios, color: Color(0xff5E1D04), size: 20),
         ),
         title: Text('Order Details',
             style: GoogleFonts.playfairDisplay(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xff5E1D04))),
+                fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xff5E1D04))),
         centerTitle: true,
       ),
       body: isUpdating
-          ? const Center(
-          child: CircularProgressIndicator(
-              color: Color(0xffD08C4A)))
+          ? const Center(child: CircularProgressIndicator(color: Color(0xffD08C4A)))
           : SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
@@ -462,121 +509,98 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
           children: [
             const SizedBox(height: 10),
 
-            // Order ID + Status
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(_order.orderId ?? '',
                     style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xff5E1D04))),
+                        fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xff5E1D04))),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                   decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(20)),
+                      color: statusColor.withOpacity(0.15), borderRadius: BorderRadius.circular(20)),
                   child: Text(_currentStatus,
                       style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: statusColor)),
+                          fontSize: 12, fontWeight: FontWeight.w600, color: statusColor)),
                 ),
               ],
             ),
             const SizedBox(height: 4),
             Text(_formatDate(_order.createdAt),
-                style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: Colors.grey.shade400)),
+                style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade400)),
             const SizedBox(height: 20),
 
-            // Customer Details
             const _SectionTitle(title: 'Customer Details'),
             const SizedBox(height: 10),
             _InfoCard(children: [
-              _InfoRow(
-                  icon: Icons.person_outline,
-                  label: 'Name',
-                  value: _order.buyerName ?? ''),
-              _InfoRow(
-                  icon: Icons.phone_outlined,
-                  label: 'Phone',
-                  value: _order.buyerPhone ?? ''),
-              _InfoRow(
-                  icon: Icons.location_on_outlined,
-                  label: 'Address',
-                  value: _order.buyerAddress ?? ''),
+              _InfoRow(icon: Icons.person_outline, label: 'Name', value: _order.buyerName ?? ''),
+              _InfoRow(icon: Icons.phone_outlined, label: 'Phone', value: _order.buyerPhone ?? ''),
+              _InfoRow(icon: Icons.location_on_outlined, label: 'Address', value: _order.buyerAddress ?? ''),
             ]),
             const SizedBox(height: 20),
 
-            // Order Summary
             const _SectionTitle(title: 'Order Summary'),
             const SizedBox(height: 10),
             _InfoCard(children: [
-              _InfoRow(
-                  icon: Icons.local_florist_outlined,
-                  label: 'Product',
-                  value: _order.productName ?? ''),
-              _InfoRow(
-                  icon: Icons.numbers_outlined,
-                  label: 'Quantity',
-                  value: '${_order.quantity ?? 1}'),
-              _InfoRow(
-                  icon: Icons.payments_outlined,
-                  label: 'Amount',
-                  value: 'Rs ${_order.amount ?? 0}'),
-              _InfoRow(
-                  icon: Icons.money_outlined,
-                  label: 'Payment',
-                  value: 'Cash on Delivery'),
+              _InfoRow(icon: Icons.local_florist_outlined, label: 'Product', value: _order.productName ?? ''),
+              _InfoRow(icon: Icons.numbers_outlined, label: 'Quantity', value: '${_order.quantity ?? 1}'),
+              _InfoRow(icon: Icons.payments_outlined, label: 'Amount', value: 'Rs ${_order.amount ?? 0}'),
+              _InfoRow(icon: Icons.money_outlined, label: 'Payment', value: 'Cash on Delivery'),
             ]),
             const SizedBox(height: 20),
 
-            // Dispatch info (shows rider OR courier depending on deliveryType)
-            if (_currentStatus == 'Dispatched' ||
-                _currentStatus == 'Delivered') ...[
+            if (_currentStatus == 'Dispatched' || _currentStatus == 'Delivered') ...[
               const _SectionTitle(title: 'Dispatch Info'),
               const SizedBox(height: 10),
               _InfoCard(children: [
                 if ((_order.deliveryType ?? 'Rider') == 'Rider') ...[
-                  _InfoRow(
-                      icon: Icons.delivery_dining_outlined,
-                      label: 'Via',
-                      value: 'Rider'),
+                  _InfoRow(icon: Icons.delivery_dining_outlined, label: 'Via', value: 'Rider'),
                   if ((_order.riderName ?? '').isNotEmpty)
-                    _InfoRow(
-                        icon: Icons.person_outline,
-                        label: 'Rider',
-                        value: _order.riderName ?? ''),
+                    _InfoRow(icon: Icons.person_outline, label: 'Rider', value: _order.riderName ?? ''),
                 ] else ...[
-                  _InfoRow(
-                      icon: Icons.local_shipping_outlined,
-                      label: 'Via',
-                      value: 'Courier'),
+                  _InfoRow(icon: Icons.local_shipping_outlined, label: 'Via', value: 'Courier'),
                   if ((_order.courierName ?? '').isNotEmpty)
-                    _InfoRow(
-                        icon: Icons.local_shipping_outlined,
-                        label: 'Courier',
-                        value: _order.courierName ?? ''),
+                    _InfoRow(icon: Icons.local_shipping_outlined, label: 'Courier', value: _order.courierName ?? ''),
                   if ((_order.trackingNumber ?? '').isNotEmpty)
-                    _InfoRow(
-                        icon: Icons.confirmation_number_outlined,
-                        label: 'Tracking',
-                        value: _order.trackingNumber ?? ''),
+                    _InfoRow(icon: Icons.confirmation_number_outlined, label: 'Tracking', value: _order.trackingNumber ?? ''),
                 ],
               ]),
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
+
+              // Cancel dispatch button — only for Dispatched with rider, not yet delivered
+              if (_currentStatus == 'Dispatched' && (_order.deliveryType ?? 'Rider') == 'Rider') ...[
+                GestureDetector(
+                  onTap: _showCancelDispatchDialog,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.red.shade200),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.close, size: 16, color: Colors.red.shade400),
+                        const SizedBox(width: 6),
+                        Text('Cancel Dispatch',
+                            style: GoogleFonts.poppins(
+                                fontSize: 12, fontWeight: FontWeight.w600, color: Colors.red.shade400)),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+              const SizedBox(height: 8),
             ],
 
-            // Timeline
             const _SectionTitle(title: 'Order Timeline'),
             const SizedBox(height: 10),
             _OrderTimeline(currentStatus: _currentStatus),
             const SizedBox(height: 24),
 
-            // Actions
             if (_currentStatus == 'Pending') ...[
               const _SectionTitle(title: 'Actions'),
               const SizedBox(height: 10),
@@ -595,7 +619,7 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
                   label: 'Dispatch to Rider',
                   icon: Icons.delivery_dining_outlined,
                   color: const Color(0xffD08C4A),
-                  onTap: _showDispatchToRiderSheet),
+                  onTap: _showRiderSelectionSheet),
               const SizedBox(height: 10),
               _ActionButton(
                   label: 'Dispatch to Courier',
@@ -627,17 +651,13 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                    color: const Color(0xFFE8F5E9),
-                    borderRadius: BorderRadius.circular(12)),
+                    color: const Color(0xFFE8F5E9), borderRadius: BorderRadius.circular(12)),
                 child: Row(children: [
-                  const Icon(Icons.check_circle,
-                      color: Color(0xff66BB6A), size: 22),
+                  const Icon(Icons.check_circle, color: Color(0xff66BB6A), size: 22),
                   const SizedBox(width: 10),
                   Text('Order delivered successfully',
                       style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: const Color(0xff66BB6A))),
+                          fontSize: 13, fontWeight: FontWeight.w500, color: const Color(0xff66BB6A))),
                 ]),
               ),
               const SizedBox(height: 10),
@@ -648,11 +668,9 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                    color: const Color(0xFFFCE4EC),
-                    borderRadius: BorderRadius.circular(12)),
+                    color: const Color(0xFFFCE4EC), borderRadius: BorderRadius.circular(12)),
                 child: Row(children: [
-                  Icon(Icons.cancel_outlined,
-                      color: Colors.red.shade400, size: 22),
+                  Icon(Icons.cancel_outlined, color: Colors.red.shade400, size: 22),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -660,9 +678,7 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
                           ? 'Cancelled: ${_order.notDeliveredReason}'
                           : 'Order cancelled',
                       style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.red.shade400),
+                          fontSize: 13, fontWeight: FontWeight.w500, color: Colors.red.shade400),
                     ),
                   ),
                 ]),
@@ -678,6 +694,101 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
   }
 }
 
+// ── Rider Select Card — for bottom sheet
+class _RiderSelectCard extends StatelessWidget {
+  final RiderModel rider;
+  final OrderService orderService;
+  final VoidCallback? onTap;
+
+  const _RiderSelectCard({
+    required this.rider,
+    required this.orderService,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isBlocked = rider.isBlocked == true;
+
+    return Opacity(
+      opacity: isBlocked ? 0.5 : 1.0,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF9F9F9),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFEEEEEE)),
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: const Color(0xFFFFF3CD),
+                child: Text(
+                  (rider.name ?? 'R').isNotEmpty ? rider.name![0].toUpperCase() : 'R',
+                  style: GoogleFonts.poppins(
+                      fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xffD08C4A)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      Text(rider.name ?? '',
+                          style: GoogleFonts.poppins(
+                              fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xff5E1D04))),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: isBlocked ? const Color(0xFFFCE4EC) : const Color(0xFFE8F5E9),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          isBlocked ? 'Blocked' : 'Active',
+                          style: GoogleFonts.poppins(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                              color: isBlocked ? const Color(0xffEF5350) : const Color(0xff66BB6A)),
+                        ),
+                      ),
+                    ]),
+                    const SizedBox(height: 3),
+                    Text(rider.phone ?? '',
+                        style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade500)),
+                    if ((rider.vehicleModel ?? '').isNotEmpty)
+                      Text('${rider.vehicleModel} • ${rider.vehicleNumber ?? ''}',
+                          style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade500)),
+
+                    // Active orders count
+                    FutureBuilder<int>(
+                      future: orderService.getRiderActiveOrdersCount(rider.docId ?? ''),
+                      builder: (context, snapshot) {
+                        final count = snapshot.data ?? 0;
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 3),
+                          child: Text('$count active deliveries',
+                              style: GoogleFonts.poppins(fontSize: 10, color: const Color(0xffD08C4A))),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              if (!isBlocked)
+                const Icon(Icons.chevron_right, color: Color(0xffD08C4A)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ── Widgets
 
 class _SectionTitle extends StatelessWidget {
@@ -686,9 +797,7 @@ class _SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(title,
       style: GoogleFonts.playfairDisplay(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: const Color(0xff5E1D04)));
+          fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xff5E1D04)));
 }
 
 class _InfoCard extends StatelessWidget {
@@ -700,17 +809,9 @@ class _InfoCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-          color: const Color(0xFFF9F9F9),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFEEEEEE))),
+          color: const Color(0xFFF9F9F9), borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFFEEEEEE))),
       child: Column(
-        children: children
-            .expand((w) => [
-          w,
-          if (w != children.last)
-            Divider(color: Colors.grey.shade200, height: 16)
-        ])
-            .toList(),
+        children: children.expand((w) => [w, if (w != children.last) Divider(color: Colors.grey.shade200, height: 16)]).toList(),
       ),
     );
   }
@@ -719,24 +820,14 @@ class _InfoCard extends StatelessWidget {
 class _InfoRow extends StatelessWidget {
   final IconData icon;
   final String label, value;
-  const _InfoRow(
-      {required this.icon, required this.label, required this.value});
+  const _InfoRow({required this.icon, required this.label, required this.value});
   @override
   Widget build(BuildContext context) {
     return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Icon(icon, size: 16, color: const Color(0xffD08C4A)),
       const SizedBox(width: 10),
-      SizedBox(
-          width: 70,
-          child: Text(label,
-              style: GoogleFonts.poppins(
-                  fontSize: 12, color: Colors.grey.shade500))),
-      Expanded(
-          child: Text(value,
-              style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xff5E1D04)))),
+      SizedBox(width: 70, child: Text(label, style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade500))),
+      Expanded(child: Text(value, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500, color: const Color(0xff5E1D04)))),
     ]);
   }
 }
@@ -745,12 +836,7 @@ class _OrderTimeline extends StatelessWidget {
   final String currentStatus;
   const _OrderTimeline({required this.currentStatus});
 
-  static const List<String> _steps = [
-    'Pending',
-    'Processing',
-    'Dispatched',
-    'Delivered'
-  ];
+  static const List<String> _steps = ['Pending', 'Processing', 'Dispatched', 'Delivered'];
 
   bool _isCompleted(String step) {
     final ci = _steps.indexOf(currentStatus);
@@ -764,54 +850,34 @@ class _OrderTimeline extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-          color: const Color(0xFFF9F9F9),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFEEEEEE))),
+          color: const Color(0xFFF9F9F9), borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFFEEEEEE))),
       child: Column(
         children: _steps.asMap().entries.map((entry) {
           final isCompleted = _isCompleted(entry.value);
           final isLast = entry.key == _steps.length - 1;
-          return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Column(children: [
-                  Container(
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                        color: isCompleted
-                            ? const Color(0xffD08C4A)
-                            : Colors.grey.shade200,
-                        shape: BoxShape.circle),
-                    child: Icon(
-                        isCompleted ? Icons.check : Icons.circle,
-                        size: isCompleted ? 14 : 8,
-                        color: isCompleted
-                            ? Colors.white
-                            : Colors.grey.shade400),
-                  ),
-                  if (!isLast)
-                    Container(
-                        width: 2,
-                        height: 30,
-                        color: isCompleted
-                            ? const Color(0xffD08C4A)
-                            : Colors.grey.shade200),
-                ]),
-                const SizedBox(width: 12),
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(entry.value,
-                      style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          fontWeight: isCompleted
-                              ? FontWeight.w600
-                              : FontWeight.normal,
-                          color: isCompleted
-                              ? const Color(0xff5E1D04)
-                              : Colors.grey.shade400)),
-                ),
-              ]);
+          return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Column(children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                    color: isCompleted ? const Color(0xffD08C4A) : Colors.grey.shade200, shape: BoxShape.circle),
+                child: Icon(isCompleted ? Icons.check : Icons.circle,
+                    size: isCompleted ? 14 : 8, color: isCompleted ? Colors.white : Colors.grey.shade400),
+              ),
+              if (!isLast)
+                Container(width: 2, height: 30, color: isCompleted ? const Color(0xffD08C4A) : Colors.grey.shade200),
+            ]),
+            const SizedBox(width: 12),
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(entry.value,
+                  style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: isCompleted ? FontWeight.w600 : FontWeight.normal,
+                      color: isCompleted ? const Color(0xff5E1D04) : Colors.grey.shade400)),
+            ),
+          ]);
         }).toList(),
       ),
     );
@@ -823,11 +889,7 @@ class _ActionButton extends StatelessWidget {
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
-  const _ActionButton(
-      {required this.label,
-        required this.icon,
-        required this.color,
-        required this.onTap});
+  const _ActionButton({required this.label, required this.icon, required this.color, required this.onTap});
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -836,17 +898,11 @@ class _ActionButton extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withOpacity(0.3))),
+            color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: color.withOpacity(0.3))),
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           Icon(icon, color: color, size: 20),
           const SizedBox(width: 8),
-          Text(label,
-              style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: color)),
+          Text(label, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: color)),
         ]),
       ),
     );
@@ -858,11 +914,7 @@ class _SheetInputField extends StatelessWidget {
   final String hint;
   final IconData icon;
   final TextInputType keyboardType;
-  const _SheetInputField(
-      {required this.controller,
-        required this.hint,
-        required this.icon,
-        this.keyboardType = TextInputType.text});
+  const _SheetInputField({required this.controller, required this.hint, required this.icon, this.keyboardType = TextInputType.text});
   @override
   Widget build(BuildContext context) {
     return TextField(
@@ -871,23 +923,14 @@ class _SheetInputField extends StatelessWidget {
       style: GoogleFonts.poppins(fontSize: 13),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle:
-        GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade400),
-        prefixIcon:
-        Icon(icon, color: const Color(0xffD08C4A), size: 20),
+        hintStyle: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade400),
+        prefixIcon: Icon(icon, color: const Color(0xffD08C4A), size: 20),
         filled: true,
         fillColor: const Color(0xFFF9F9F9),
-        contentPadding:
-        const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-        border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFEEEEEE))),
-        enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFEEEEEE))),
-        focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xffD08C4A))),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFEEEEEE))),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFEEEEEE))),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xffD08C4A))),
       ),
     );
   }
