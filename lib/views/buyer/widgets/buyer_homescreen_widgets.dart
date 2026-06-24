@@ -37,13 +37,11 @@ class HomeSearchBar extends StatelessWidget {
                   child: TextField(
                     controller: controller,
                     onChanged: onChanged,
-                    style: GoogleFonts.poppins(
-                        color: const Color(0xff5E1D04), fontSize: 14),
+                    style: GoogleFonts.poppins(color: const Color(0xff5E1D04), fontSize: 14),
                     decoration: InputDecoration(
                       hintText: "Search product",
                       hintStyle: GoogleFonts.poppins(
-                        color:
-                        const Color(0xff5E1D04).withOpacity(0.7),
+                        color: const Color(0xff5E1D04).withOpacity(0.7),
                         fontSize: 14,
                       ),
                       border: InputBorder.none,
@@ -70,67 +68,7 @@ class HomeSearchBar extends StatelessWidget {
   }
 }
 
-class BrandChip extends StatelessWidget {
-  final String label;
-  final String? imagePath;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const BrandChip({
-    super.key,
-    required this.label,
-    this.imagePath,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding:
-        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? const Color(0xff5E1D04)
-              : const Color(0xff1A0A1F),
-          borderRadius: BorderRadius.circular(8),
-          border: isSelected
-              ? Border.all(
-              color: const Color(0xffF6B55E), width: 1.5)
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (imagePath != null && imagePath!.isNotEmpty) ...[
-              CircleAvatar(
-                radius: 12,
-                backgroundColor: Colors.transparent,
-                backgroundImage: imagePath!.startsWith('http')
-                    ? NetworkImage(imagePath!) as ImageProvider
-                    : AssetImage(imagePath!),
-              ),
-              const SizedBox(width: 8),
-            ],
-            Text(
-              label,
-              style: GoogleFonts.poppins(
-                color: const Color(0xffF6B55E),
-                fontWeight: isSelected
-                    ? FontWeight.bold
-                    : FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── ProductHomeCard — fully wired with Firestore wishlist + login guard
+// ── ProductHomeCard — Improved
 class ProductHomeCard extends StatelessWidget {
   final ProductModel product;
   final bool isLoggedIn;
@@ -145,20 +83,15 @@ class ProductHomeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String formattedPrice =
-    product.sizes != null && product.sizes!.isNotEmpty
+    final String formattedPrice = product.sizes != null && product.sizes!.isNotEmpty
         ? 'Rs ${product.sizes!.first['price']}'
         : 'Rs ${product.price ?? 0.0}';
 
-    final double numericPrice =
-    product.sizes != null && product.sizes!.isNotEmpty
-        ? double.tryParse(
-        product.sizes!.first['price'].toString()) ??
-        0.0
+    final double numericPrice = product.sizes != null && product.sizes!.isNotEmpty
+        ? double.tryParse(product.sizes!.first['price'].toString()) ?? 0.0
         : (product.price ?? 0.0);
 
     return GestureDetector(
-      // Product detail — always accessible (guest allowed)
       onTap: () {
         Navigator.push(
           context,
@@ -190,83 +123,52 @@ class ProductHomeCard extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Product image
                 Expanded(
                   child: Center(
-                    child: product.imageUrl != null &&
-                        product.imageUrl!.isNotEmpty
+                    child: product.imageUrl != null && product.imageUrl!.isNotEmpty
                         ? ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.network(
                         product.imageUrl!,
                         fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) =>
-                        const Icon(
+                        errorBuilder: (_, __, ___) => const Icon(
                           Icons.local_florist_outlined,
                           color: Color(0xffD08C4A),
                           size: 40,
                         ),
                       ),
                     )
-                        : const Icon(
-                      Icons.local_florist_outlined,
-                      color: Color(0xffD08C4A),
-                      size: 40,
-                    ),
+                        : const Icon(Icons.local_florist_outlined, color: Color(0xffD08C4A), size: 40),
                   ),
                 ),
                 const SizedBox(height: 8),
-
-                // Product name
                 Text(
                   product.name ?? 'Fragrance',
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xff5E1D04),
-                  ),
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: const Color(0xff5E1D04)),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-
-                // Brand
                 Text(
                   product.brand ?? 'Generic Brand',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color:
-                    const Color(0xff5E1D04).withOpacity(0.8),
-                  ),
+                  style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xff5E1D04).withOpacity(0.8)),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
-
-                // Price + rating
                 Row(
-                  mainAxisAlignment:
-                  MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       formattedPrice,
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xff5E1D04),
-                        fontSize: 13,
-                      ),
+                      style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: const Color(0xff5E1D04), fontSize: 13),
                     ),
                     Row(
                       children: [
-                        const Icon(Icons.star,
-                            color: Colors.orange, size: 14),
+                        const Icon(Icons.star, color: Colors.orange, size: 14),
                         const SizedBox(width: 2),
                         Text(
-                          (product.rating ?? 0.0)
-                              .toStringAsFixed(1),
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.grey.shade700,
-                          ),
+                          (product.rating ?? 0.0).toStringAsFixed(1),
+                          style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.grey.shade700),
                         ),
                       ],
                     ),
@@ -275,7 +177,7 @@ class ProductHomeCard extends StatelessWidget {
               ],
             ),
 
-            // Wishlist button — Firestore stream + login guard
+            // Wishlist Button
             Positioned(
               top: 0,
               right: 0,
@@ -293,7 +195,6 @@ class ProductHomeCard extends StatelessWidget {
   }
 }
 
-// ── Wishlist Button — uses Firestore stream for real-time state
 class _WishlistButton extends StatelessWidget {
   final ProductModel product;
   final double numericPrice;
@@ -309,25 +210,17 @@ class _WishlistButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Guest — always shows unfilled heart, tapping shows login prompt
     if (!isLoggedIn) {
       return IconButton(
         padding: EdgeInsets.zero,
         constraints: const BoxConstraints(),
-        icon: const Icon(
-          Icons.favorite_border,
-          color: Color(0xff5E1D04),
-          size: 22,
-        ),
+        icon: const Icon(Icons.favorite_border, color: Color(0xff5E1D04), size: 22),
         onPressed: onLoginRequired,
       );
     }
 
-    // Logged in — stream from Firestore for real-time wishlist state
-    final String buyerId =
-        FirebaseAuth.instance.currentUser!.uid;
-    final String wishlistItemId =
-        '${buyerId}_${product.docId ?? ''}';
+    final String buyerId = FirebaseAuth.instance.currentUser!.uid;
+    final String wishlistItemId = '${buyerId}_${product.docId ?? ''}';
 
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance
@@ -337,41 +230,34 @@ class _WishlistButton extends StatelessWidget {
           .doc(wishlistItemId)
           .snapshots(),
       builder: (context, snapshot) {
-        final bool isLiked =
-            snapshot.data?.exists ?? false;
+        final bool isLiked = snapshot.data?.exists ?? false;
 
         return IconButton(
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(),
           icon: Icon(
             isLiked ? Icons.favorite : Icons.favorite_border,
-            color: isLiked
-                ? const Color(0xffF6B55E)
-                : const Color(0xff5E1D04),
+            color: isLiked ? const Color(0xffF6B55E) : const Color(0xff5E1D04),
             size: 22,
           ),
           onPressed: () async {
             try {
               await WishlistService().toggleWishlist(
-                buyerId:   buyerId,
+                buyerId: buyerId,
                 productId: product.docId ?? '',
-                name:      product.name ?? '',
-                price:     numericPrice,
+                name: product.name ?? '',
+                price: numericPrice,
                 imagePath: product.imageUrl ?? '',
-                sellerId:  product.sellerId ?? '',
+                sellerId: product.sellerId ?? '',
               );
             } catch (e) {
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(e.toString(),
-                        style:
-                        GoogleFonts.poppins(fontSize: 13)),
+                    content: Text(e.toString(), style: GoogleFonts.poppins(fontSize: 13)),
                     backgroundColor: Colors.red.shade400,
                     behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                        borderRadius:
-                        BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                 );
               }

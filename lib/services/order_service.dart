@@ -325,11 +325,12 @@ class OrderService {
 
   // ── PAYMENT MANAGEMENT ──────
 
-  /// Rider confirms payment received
+  /// Rider confirms he received COD from Buyer
   Future<void> markBuyerPaymentReceived(String orderId) async {
     try {
       await _firestore.collection(_collection).doc(orderId).update({
         'buyerPaymentStatus': 'Received',
+        'riderPaymentStatus': 'Pending',
         'updatedAt': DateTime.now().millisecondsSinceEpoch,
       });
     } catch (e) {
@@ -554,5 +555,50 @@ class OrderService {
     } catch (e) {
       throw e.toString();
     }
+  }
+  // ── RIDER & SELLER PAYMENT SETTLEMENT ──────
+
+  /// Seller confirms he received money from Rider
+  Future<void> markRiderPaymentReceived(String orderId) async {
+    try {
+      await _firestore.collection(_collection).doc(orderId).update({
+        'riderPaymentStatus': 'Received',
+        'status': 'Completed',
+        'completedAt': DateTime.now().millisecondsSinceEpoch,
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
+      });
+    } catch (e) {
+      throw e.toString();
+    }
+  }
+
+  /// Get Orders where Rider collected payment but Seller hasn't confirmed yet
+  Future<List<OrderModel>> getPendingRiderPayments(String sellerId) async {
+    try {
+      QuerySnapshot snapshot = await _firestore
+          .collection(_collection)
+          .where('sellerId', isEqualTo: sellerId)
+          .where('buyerPaymentStatus', isEqualTo: 'Received')
+          .where('riderPaymentStatus', isEqualTo: 'Pending')
+          .orderBy('deliveredAt', descending: true)
+          .get();
+
+      return snapshot.docs
+          .map((doc) => OrderModel.fromJson(doc.data() as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      throw e.toString();
+    }
+  }
+  // ── Real-time Order Stream (for Rider Detail Screen)
+  Stream<OrderModel> getOrderStream(String orderId) {
+    return _firestore
+        .collection(_collection)
+        .doc(orderId)
+        .snapshots()
+        .map((doc) {
+      if (!doc.exists) throw 'Order not found';
+      return OrderModel.fromJson(doc.data() as Map<String, dynamic>);
+    });
   }
 }

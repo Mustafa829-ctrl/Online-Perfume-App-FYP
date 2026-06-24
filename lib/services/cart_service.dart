@@ -5,9 +5,14 @@ class CartService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String _collection = 'carts';
 
-  // ── CART OPERATIONS
+  // ── Helper: Validate User
+  void _validateBuyer(String buyerId) {
+    if (buyerId.isEmpty) {
+      throw 'User must be logged in to perform this action';
+    }
+  }
 
-  /// Add to Cart
+  // ── Add to Cart
   Future<void> addToCart({
     required String buyerId,
     required String productId,
@@ -17,6 +22,8 @@ class CartService {
     required String sellerId,
     String? imageUrl,
   }) async {
+    _validateBuyer(buyerId);
+
     try {
       String cartItemId = '${buyerId}_$productId';
 
@@ -40,8 +47,10 @@ class CartService {
     }
   }
 
-  /// Get All Cart Items (Mapped to CartItemModel)
+  /// Get All Cart Items
   Future<List<CartItemModel>> getCartItems(String buyerId) async {
+    if (buyerId.isEmpty) return [];
+
     try {
       QuerySnapshot snapshot = await _firestore
           .collection(_collection)
@@ -64,8 +73,9 @@ class CartService {
     required String cartItemId,
     required int newQuantity,
   }) async {
+    _validateBuyer(buyerId);
+
     try {
-      // Automatically clear item if quantity drops to zero
       if (newQuantity <= 0) {
         await removeFromCart(buyerId: buyerId, cartItemId: cartItemId);
         return;
@@ -87,6 +97,8 @@ class CartService {
     required String buyerId,
     required String cartItemId,
   }) async {
+    _validateBuyer(buyerId);
+
     try {
       await _firestore
           .collection(_collection)
@@ -101,6 +113,8 @@ class CartService {
 
   /// Clear Entire Cart
   Future<void> clearCart(String buyerId) async {
+    _validateBuyer(buyerId);
+
     try {
       WriteBatch batch = _firestore.batch();
       QuerySnapshot snapshot = await _firestore
@@ -118,16 +132,18 @@ class CartService {
     }
   }
 
-  /// Get Cart Total Amount
+  /// Get Cart Total Amount - FIXED
   Future<double> getCartTotal(String buyerId) async {
+    if (buyerId.isEmpty) return 0.0;
+
     try {
       List<CartItemModel> items = await getCartItems(buyerId);
-      double total = 0.0;
 
-      for (var item in items) {
-        total += item.totalPrice;
-      }
-      return total;
+      // Fixed: Use synchronous calculation
+      return items.fold<double>(
+        0.0,
+            (double sum, CartItemModel item) => sum + (item.totalPrice ?? 0.0),
+      );
     } catch (e) {
       throw e.toString();
     }

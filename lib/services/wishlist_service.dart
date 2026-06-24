@@ -5,6 +5,13 @@ class WishlistService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String _collection = 'wishlists';
 
+  // ── Helper: Validate User
+  void _validateBuyer(String buyerId) {
+    if (buyerId.isEmpty) {
+      throw 'User must be logged in to perform this action';
+    }
+  }
+
   // ── Add to Wishlist
   Future<void> addToWishlist({
     required String buyerId,
@@ -14,6 +21,8 @@ class WishlistService {
     required String imagePath,
     required String sellerId,
   }) async {
+    _validateBuyer(buyerId);
+
     try {
       final String wishlistItemId = '${buyerId}_$productId';
 
@@ -21,18 +30,17 @@ class WishlistService {
           .collection(_collection)
           .doc(buyerId)
           .collection('items')
-
           .doc(wishlistItemId)
           .set({
-        'docId':          wishlistItemId,
+        'docId': wishlistItemId,
         'wishlistItemId': wishlistItemId,
-        'productId':      productId,
-        'buyerId':        buyerId,
-        'name':           name,
-        'price':          price,
-        'imagePath':      imagePath,
-        'sellerId':       sellerId,
-        'addedAt':        DateTime.now().millisecondsSinceEpoch,
+        'productId': productId,
+        'buyerId': buyerId,
+        'name': name,
+        'price': price,
+        'imagePath': imagePath,
+        'sellerId': sellerId,
+        'addedAt': DateTime.now().millisecondsSinceEpoch,
       });
     } catch (e) {
       throw e.toString();
@@ -44,6 +52,8 @@ class WishlistService {
     required String buyerId,
     required String productId,
   }) async {
+    _validateBuyer(buyerId);
+
     try {
       final String wishlistItemId = '${buyerId}_$productId';
 
@@ -58,7 +68,7 @@ class WishlistService {
     }
   }
 
-  // ── Toggle Wishlist (add if not exists, remove if exists)
+  // ── Toggle Wishlist
   Future<void> toggleWishlist({
     required String buyerId,
     required String productId,
@@ -67,6 +77,8 @@ class WishlistService {
     required String imagePath,
     required String sellerId,
   }) async {
+    _validateBuyer(buyerId);
+
     try {
       final String wishlistItemId = '${buyerId}_$productId';
 
@@ -78,16 +90,15 @@ class WishlistService {
           .get();
 
       if (doc.exists) {
-        await removeFromWishlist(
-            buyerId: buyerId, productId: productId);
+        await removeFromWishlist(buyerId: buyerId, productId: productId);
       } else {
         await addToWishlist(
-          buyerId:   buyerId,
+          buyerId: buyerId,
           productId: productId,
-          name:      name,
-          price:     price,
+          name: name,
+          price: price,
           imagePath: imagePath,
-          sellerId:  sellerId,
+          sellerId: sellerId,
         );
       }
     } catch (e) {
@@ -95,11 +106,13 @@ class WishlistService {
     }
   }
 
-  // ── Check if product is in wishlist
+  // ── Check if in wishlist
   Future<bool> isInWishlist({
     required String buyerId,
     required String productId,
   }) async {
+    if (buyerId.isEmpty) return false;
+
     try {
       final String wishlistItemId = '${buyerId}_$productId';
 
@@ -116,8 +129,10 @@ class WishlistService {
     }
   }
 
-  // ── Get wishlist items stream (real-time)
+  // ── Get wishlist stream
   Stream<List<WishlistItemModel>> getWishlistStream(String buyerId) {
+    if (buyerId.isEmpty) return Stream.value([]);
+
     return _firestore
         .collection(_collection)
         .doc(buyerId)
@@ -125,14 +140,14 @@ class WishlistService {
         .orderBy('addedAt', descending: true)
         .snapshots()
         .map((snap) => snap.docs
-        .map((doc) =>
-        WishlistItemModel.fromJson(doc.data()))
+        .map((doc) => WishlistItemModel.fromJson(doc.data()))
         .toList());
   }
 
-  // ── Get all wishlist items once
-  Future<List<WishlistItemModel>> getWishlistItems(
-      String buyerId) async {
+  // ── Get all wishlist items
+  Future<List<WishlistItemModel>> getWishlistItems(String buyerId) async {
+    if (buyerId.isEmpty) return [];
+
     try {
       final snap = await _firestore
           .collection(_collection)
@@ -142,16 +157,17 @@ class WishlistService {
           .get();
 
       return snap.docs
-          .map((doc) =>
-          WishlistItemModel.fromJson(doc.data()))
+          .map((doc) => WishlistItemModel.fromJson(doc.data()))
           .toList();
     } catch (e) {
       throw e.toString();
     }
   }
 
-  // ── Clear entire wishlist
+  // ── Clear wishlist
   Future<void> clearWishlist(String buyerId) async {
+    _validateBuyer(buyerId);
+
     try {
       final batch = _firestore.batch();
       final snap = await _firestore
@@ -169,8 +185,10 @@ class WishlistService {
     }
   }
 
-  // ── Get wishlist count stream (real-time badge)
+  // ── Wishlist count stream
   Stream<int> getWishlistCountStream(String buyerId) {
+    if (buyerId.isEmpty) return Stream.value(0);
+
     return _firestore
         .collection(_collection)
         .doc(buyerId)

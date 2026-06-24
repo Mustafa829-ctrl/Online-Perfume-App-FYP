@@ -21,17 +21,30 @@ class _SelectRoleState extends State<SelectRole> {
   String? _selectedRole;
   bool _isLoading = false;
   int _adminTapCount = 0;
+  DateTime? _lastTapTime;
 
   final List<RoleModel> _roles = SelectRoleServices.getRoles();
 
-  // Silent Secret Admin Access
+  // Silent Secret Admin Access with Timer
   void _handleSecretAdminTap() {
-    setState(() {
-      _adminTapCount++;
-    });
+    final now = DateTime.now();
+
+    // Reset count if more than 5 seconds have passed since last tap
+    if (_lastTapTime != null &&
+        now.difference(_lastTapTime!).inSeconds > 5) {
+      _adminTapCount = 0;
+    }
+
+    _lastTapTime = now;
+    _adminTapCount++;
 
     if (_adminTapCount >= 4) {
-      setState(() => _adminTapCount = 0);
+      setState(() {
+        _adminTapCount = 0;
+        _lastTapTime = null;
+      });
+
+      // Navigate to Admin Login
       Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const AdminLoginScreen()),

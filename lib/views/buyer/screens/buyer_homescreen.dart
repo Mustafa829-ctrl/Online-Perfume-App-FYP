@@ -36,15 +36,15 @@ class _BuyerHomescreenState extends State<BuyerHomescreen> {
 
   int _selectedIndex = 0;
 
-  // Auth state
-  User? get _user => FirebaseAuth.instance.currentUser;
+  User? get _currentUser => FirebaseAuth.instance.currentUser;
 
-  // Cart count stream
   Stream<int> get _cartCountStream {
-    if (_user == null) return Stream.value(0);
+    final user = _currentUser;
+    if (user == null) return Stream.value(0);
+
     return FirebaseFirestore.instance
         .collection('carts')
-        .doc(_user!.uid)
+        .doc(user.uid)
         .collection('items')
         .snapshots()
         .map((snap) => snap.docs.length);
@@ -69,10 +69,12 @@ class _BuyerHomescreenState extends State<BuyerHomescreen> {
   Future<void> _loadFirestoreCategories() async {
     try {
       final data = await _categoryService.getAllCategories();
-      if (mounted) setState(() {
-        _categories = data;
-        _isCategoriesLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _categories = data;
+          _isCategoriesLoading = false;
+        });
+      }
     } catch (e) {
       if (mounted) setState(() => _isCategoriesLoading = false);
     }
@@ -81,10 +83,12 @@ class _BuyerHomescreenState extends State<BuyerHomescreen> {
   Future<void> _loadFirestoreProducts() async {
     try {
       final data = await _productService.getAllProducts();
-      if (mounted) setState(() {
-        _allProducts = data;
-        _isProductsLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _allProducts = data;
+          _isProductsLoading = false;
+        });
+      }
     } catch (e) {
       if (mounted) setState(() => _isProductsLoading = false);
     }
@@ -103,22 +107,43 @@ class _BuyerHomescreenState extends State<BuyerHomescreen> {
     return list;
   }
 
+  // MENU HANDLER
+  void _handleMenuTap(BuildContext context) {
+    if (_currentUser == null) {
+      _showLoginPrompt();
+    } else {
+      Scaffold.of(context).openDrawer();
+    }
+  }
+
   void _showLoginPrompt() {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Login Required'),
-        content: const Text('Please login first'),
+        title: Row(
+          children: [
+            const Icon(Icons.lock_outline, color: Color(0xffD08C4A), size: 28),
+            const SizedBox(width: 12),
+            Text('Login Required', style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Text('Please login first to access the menu.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               Navigator.push(context, MaterialPageRoute(builder: (_) => const BuyerLoginScreen()));
             },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xffD08C4A)),
-            child: const Text('Login'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xff5E1D04),
+              foregroundColor: const Color(0xffD08C4A),
+            ),
+            child: const Text('Login Now'),
           ),
         ],
       ),
@@ -130,10 +155,6 @@ class _BuyerHomescreenState extends State<BuyerHomescreen> {
       setState(() => _selectedIndex = index);
       return;
     }
-    // Check if user is logged in and has buyer role
-    // We'll do this asynchronously; for a quick guard, we check current user.
-    // But better to check role via FutureBuilder or await.
-    // We'll use a local method that checks and then navigates.
     _guardNavigation(index);
   }
 
@@ -157,7 +178,7 @@ class _BuyerHomescreenState extends State<BuyerHomescreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 10),
-            if (_user == null)
+            if (_currentUser == null)
               GestureDetector(
                 onTap: _showLoginPrompt,
                 child: Container(
@@ -174,10 +195,7 @@ class _BuyerHomescreenState extends State<BuyerHomescreen> {
                       Icon(Icons.info_outline, color: Color(0xffD08C4A)),
                       SizedBox(width: 10),
                       Expanded(
-                        child: Text(
-                          'Please Login First',
-                          style: TextStyle(fontSize: 13, color: Color(0xff5E1D04)),
-                        ),
+                        child: Text('Please Login First', style: TextStyle(fontSize: 13, color: Color(0xff5E1D04))),
                       ),
                       Text('Login ', style: TextStyle(fontWeight: FontWeight.bold)),
                     ],
@@ -208,7 +226,7 @@ class _BuyerHomescreenState extends State<BuyerHomescreen> {
                 final product = _filteredProducts[index];
                 return ProductHomeCard(
                   product: product,
-                  isLoggedIn: _user != null,
+                  isLoggedIn: _currentUser != null,
                   onLoginRequired: _showLoginPrompt,
                 );
               },
@@ -222,13 +240,11 @@ class _BuyerHomescreenState extends State<BuyerHomescreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Use StreamBuilder for auth changes
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       initialData: FirebaseAuth.instance.currentUser,
       builder: (context, authSnapshot) {
-        final user = authSnapshot.data;
-        final bool isLoggedIn = user != null;
+        final bool isLoggedIn = authSnapshot.data != null;
 
         return Scaffold(
           backgroundColor: Colors.white,
@@ -240,14 +256,12 @@ class _BuyerHomescreenState extends State<BuyerHomescreen> {
               style: GoogleFonts.poppins(fontSize: 22, color: const Color(0xff5E1D04), fontWeight: FontWeight.w600),
             ),
             centerTitle: true,
-            leading: isLoggedIn
-                ? Builder(
+            leading: Builder(
               builder: (context) => IconButton(
                 icon: const Icon(Icons.menu, color: Color(0xff5E1D04)),
-                onPressed: () => Scaffold.of(context).openDrawer(),
+                onPressed: () => _handleMenuTap(context),   // ← Fixed
               ),
-            )
-                : null,
+            ),
           ),
           drawer: isLoggedIn ? const BuyerMenuBar() : null,
           body: _selectedIndex == 0
@@ -291,7 +305,9 @@ class _CartIcon extends StatelessWidget {
   final int cartCount;
   final bool isLoggedIn;
   final bool isActive;
+
   const _CartIcon({required this.cartCount, required this.isLoggedIn, this.isActive = false});
+
   @override
   Widget build(BuildContext context) {
     return Stack(

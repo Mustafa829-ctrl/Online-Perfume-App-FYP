@@ -11,7 +11,6 @@ import '../buyer auth/buyer_login_screen.dart';
 import 'buyer_complaints_screen.dart';
 import 'order_history_screen.dart';
 
-
 class BuyerMenuBar extends StatelessWidget {
   const BuyerMenuBar({super.key});
 
@@ -60,47 +59,32 @@ class BuyerMenuBar extends StatelessWidget {
                       Navigator.pop(context);
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(
-                            builder: (_) => const BuyerHomescreen()),
+                        MaterialPageRoute(builder: (_) => const BuyerHomescreen()),
                       );
                     },
                   ),
-                  // orders
+
+                  // Protected Items
                   _MenuItem(
                     icon: Icons.receipt_long_outlined,
                     label: 'Order History',
-                    onTap: () {
-                      Navigator.pop(context);
-                       Navigator.push(context, MaterialPageRoute(builder: (_) => OrderHistoryScreen()));
-                    },
+                    onTap: () => _checkLoginAndNavigate(context, const OrderHistoryScreen()),
                   ),
 
-                  //  Complaints
                   _MenuItem(
                     icon: Icons.report_problem_outlined,
                     label: 'Complaints',
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => BuyerComplaintsScreen()));
-                    },
+                    onTap: () => _checkLoginAndNavigate(context, const BuyerComplaintsScreen()),
                   ),
 
                   _MenuItem(
                     icon: Icons.person_outline_rounded,
                     label: 'My Profile',
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const ProfileScreen()),
-                      );
-                    },
+                    onTap: () => _checkLoginAndNavigate(context, const ProfileScreen()),
                   ),
 
                   Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     child: Divider(color: Colors.grey.shade200),
                   ),
 
@@ -123,20 +107,11 @@ class BuyerMenuBar extends StatelessWidget {
                   _MenuItem(
                     icon: Icons.lock_outline,
                     label: 'Change Password',
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) =>
-                            const BuyerChangePasswordScreen()),
-                      );
-                    },
+                    onTap: () => _checkLoginAndNavigate(context, const BuyerChangePasswordScreen()),
                   ),
 
                   Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     child: Divider(color: Colors.grey.shade200),
                   ),
 
@@ -160,27 +135,66 @@ class BuyerMenuBar extends StatelessWidget {
     );
   }
 
+  //  NEW LOGIN PROTECTION LOGIC
+  void _checkLoginAndNavigate(BuildContext context, Widget screen) {
+    if (FirebaseAuth.instance.currentUser == null) {
+      Navigator.pop(context); // Close drawer
+      _showLoginPrompt(context);
+    } else {
+      Navigator.pop(context);
+      Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+    }
+  }
+
+  void _showLoginPrompt(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.lock_outline, color: Color(0xffD08C4A), size: 28),
+            const SizedBox(width: 12),
+            Text('Login Required', style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Text(
+          'Please login first to access this feature.',
+          style: GoogleFonts.poppins(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: GoogleFonts.poppins()),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const BuyerLoginScreen()));
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xff5E1D04),
+              foregroundColor: const Color(0xffD08C4A),
+            ),
+            child: Text('Login Now', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
-        shape:
-        RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Logout',
-            style: GoogleFonts.playfairDisplay(
-                fontWeight: FontWeight.bold,
-                color: const Color(0xff5E1D04))),
-        content: Text('Are you sure you want to logout?',
-            style: GoogleFonts.poppins(
-                fontSize: 13, color: Colors.grey.shade600)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Logout', style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold, color: const Color(0xff5E1D04))),
+        content: Text('Are you sure you want to logout?', style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade600)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel',
-                style: GoogleFonts.poppins(
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w500)),
+            child: Text('Cancel', style: GoogleFonts.poppins(color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -190,8 +204,7 @@ class BuyerMenuBar extends StatelessWidget {
                 if (context.mounted) {
                   Navigator.pushAndRemoveUntil(
                     context,
-                    MaterialPageRoute(
-                        builder: (_) => const BuyerHomescreen()),
+                    MaterialPageRoute(builder: (_) => const BuyerHomescreen()),
                         (route) => false,
                   );
                 }
@@ -199,12 +212,10 @@ class BuyerMenuBar extends StatelessWidget {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(e.toString(),
-                          style: GoogleFonts.poppins(fontSize: 13)),
+                      content: Text(e.toString(), style: GoogleFonts.poppins(fontSize: 13)),
                       backgroundColor: Colors.red.shade400,
                       behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                   );
                 }
@@ -212,12 +223,9 @@ class BuyerMenuBar extends StatelessWidget {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red.shade400,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            child: Text('Logout',
-                style: GoogleFonts.poppins(
-                    color: Colors.white, fontWeight: FontWeight.w600)),
+            child: Text('Logout', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -239,27 +247,17 @@ class BuyerMenuBar extends StatelessWidget {
           CircleAvatar(
             radius: 32,
             backgroundColor: const Color(0xffD08C4A),
-            backgroundImage:
-            imageUrl.isNotEmpty ? NetworkImage(imageUrl) : null,
+            backgroundImage: imageUrl.isNotEmpty ? NetworkImage(imageUrl) : null,
             child: imageUrl.isEmpty
                 ? Text(
               name.isNotEmpty ? name[0].toUpperCase() : 'G',
-              style: GoogleFonts.playfairDisplay(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white),
+              style: GoogleFonts.playfairDisplay(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
             )
                 : null,
           ),
           const SizedBox(height: 10),
-          Text(name,
-              style: GoogleFonts.playfairDisplay(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold)),
-          Text(email,
-              style: GoogleFonts.poppins(
-                  color: Colors.white70, fontSize: 12)),
+          Text(name, style: GoogleFonts.playfairDisplay(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(email, style: GoogleFonts.poppins(color: Colors.white70, fontSize: 12)),
         ],
       ),
     );
@@ -269,10 +267,7 @@ class BuyerMenuBar extends StatelessWidget {
     return Container(
       color: const Color(0xff5E1D04),
       height: 160,
-      child: Center(
-        child: Text(text,
-            style: const TextStyle(color: Colors.white70)),
-      ),
+      child: Center(child: Text(text, style: const TextStyle(color: Colors.white70))),
     );
   }
 }
@@ -293,8 +288,7 @@ class _MenuItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(icon,
-          color: isLogout ? Colors.red.shade400 : const Color(0xffD08C4A)),
+      leading: Icon(icon, color: isLogout ? Colors.red.shade400 : const Color(0xffD08C4A)),
       title: Text(
         label,
         style: GoogleFonts.poppins(

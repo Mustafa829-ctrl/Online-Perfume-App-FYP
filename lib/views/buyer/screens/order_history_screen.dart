@@ -1,10 +1,10 @@
-// lib/views/buyer/screens/order_history_screen.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:online_perfume_app_fyp/models/order_model.dart';
 import 'package:online_perfume_app_fyp/services/order_service.dart';
 import 'order_detail_screen.dart';
+import '../buyer auth/buyer_login_screen.dart';
 
 class OrderHistoryScreen extends StatefulWidget {
   const OrderHistoryScreen({super.key});
@@ -26,25 +26,31 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   }
 
   Future<void> _loadOrders() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final User? user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       setState(() {
-        _error = 'User not logged in';
+        _error = 'Please login to view your orders';
         _isLoading = false;
       });
       return;
     }
+
     try {
       final orders = await _orderService.getBuyerOrders(user.uid);
-      setState(() {
-        _orders = orders;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _orders = orders;
+          _isLoading = false;
+          _error = null;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -56,22 +62,27 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
-      case 'delivered':   return Colors.green;
-      case 'shipped':     return Colors.blue;
-      case 'accepted':    return Colors.orange;
-      case 'picked':      return Colors.teal;
-      case 'in transit':  return Colors.lightBlue;
-      case 'assigned':    return Colors.purple;
-      case 'pending':     return Colors.amber;
-      case 'cancelled':   return Colors.red;
-      case 'returned':    return Colors.deepPurple;
-      case 'not delivered': return Colors.grey;
+      case 'delivered': return Colors.green;
+      case 'shipped': return Colors.blue;
+      case 'accepted': return Colors.orange;
+      case 'picked': return Colors.teal;
+      case 'in transit': return Colors.lightBlue;
+      case 'assigned': return Colors.purple;
+      case 'pending': return Colors.amber;
+      case 'cancelled': return Colors.red;
+      case 'returned': return Colors.deepPurple;
       default: return Colors.grey;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final User? user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return _buildGuestState();
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Order History'),
@@ -79,11 +90,11 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         foregroundColor: Colors.white,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: Color(0xffD08C4A)))
           : _error != null
-          ? Center(child: Text('Error: $_error'))
+          ? Center(child: Text(_error!))
           : _orders.isEmpty
-          ? const Center(child: Text('No orders found.'))
+          ? const Center(child: Text('No orders found yet.'))
           : ListView.builder(
         itemCount: _orders.length,
         itemBuilder: (ctx, index) {
@@ -117,14 +128,35 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => OrderDetailScreen(order: order),
-                  ),
+                  MaterialPageRoute(builder: (_) => OrderDetailScreen(order: order)),
                 );
               },
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildGuestState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.lock_outline, size: 80, color: const Color(0xff5E1D04).withOpacity(0.2)),
+            const SizedBox(height: 16),
+            Text('Login to view Order History',
+                style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: const Color(0xff5E1D04))),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BuyerLoginScreen())),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xff5E1D04)),
+              child: const Text('Login Now'),
+            ),
+          ],
+        ),
       ),
     );
   }

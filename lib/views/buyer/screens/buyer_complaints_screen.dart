@@ -2,10 +2,12 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:online_perfume_app_fyp/models/complaint_model.dart';
 import 'package:online_perfume_app_fyp/services/cloudinary_service.dart';
 import 'package:online_perfume_app_fyp/services/complaint_service.dart';
+import '../buyer auth/buyer_login_screen.dart';
 
 class BuyerComplaintsScreen extends StatefulWidget {
   const BuyerComplaintsScreen({super.key});
@@ -18,18 +20,19 @@ class _BuyerComplaintsScreenState extends State<BuyerComplaintsScreen> {
   final ComplaintService _complaintService = ComplaintService();
   final ImagePicker _picker = ImagePicker();
 
-  User get _currentUser => FirebaseAuth.instance.currentUser!; // safe because drawer only shown when logged in
-
-  Future<List<ComplaintModel>> _getComplaints() async {
-    return await _complaintService.getComplaintsByBuyer(_currentUser.uid);
-  }
-
   @override
   Widget build(BuildContext context) {
+    final User? user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return _buildGuestState();
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Complaints'),
         backgroundColor: const Color(0xffD08C4A),
+        foregroundColor: Colors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -38,10 +41,10 @@ class _BuyerComplaintsScreenState extends State<BuyerComplaintsScreen> {
         ],
       ),
       body: FutureBuilder<List<ComplaintModel>>(
-        future: _getComplaints(),
+        future: _complaintService.getComplaintsByBuyer(user.uid),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator(color: Color(0xffD08C4A)));
           }
           if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
@@ -73,9 +76,43 @@ class _BuyerComplaintsScreenState extends State<BuyerComplaintsScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _submitNewComplaint,
+        onPressed: () => _submitNewComplaint(user),
         backgroundColor: const Color(0xffD08C4A),
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Widget _buildGuestState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.lock_outline, size: 80, color: const Color(0xff5E1D04).withOpacity(0.2)),
+            const SizedBox(height: 16),
+            Text(
+              'Login to view Complaints',
+              style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: const Color(0xff5E1D04)),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Submit complaints about your orders here',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(color: Colors.grey.shade600),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const BuyerLoginScreen()),
+              ),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xff5E1D04)),
+              child: const Text('Login Now'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -93,19 +130,20 @@ class _BuyerComplaintsScreenState extends State<BuyerComplaintsScreen> {
     }
   }
 
-  Future<void> _submitNewComplaint() async {
-    final orders = await _getUserDeliveredOrders();
+  Future<void> _submitNewComplaint(User user) async {
+    final orders = await _getUserDeliveredOrders(user.uid);
     if (orders.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('You have no delivered orders to complain about.')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('You have no delivered orders to complain about.')),
+        );
+      }
       return;
     }
-    await _showOrderSelectionDialog(orders);
+    await _showOrderSelectionDialog(orders, user);
   }
 
-  Future<List<QueryDocumentSnapshot>> _getUserDeliveredOrders() async {
-    final userId = _currentUser.uid;
+  Future<List<QueryDocumentSnapshot>> _getUserDeliveredOrders(String userId) async {
     final snapshot = await FirebaseFirestore.instance
         .collection('orders')
         .where('userId', isEqualTo: userId)
@@ -114,7 +152,7 @@ class _BuyerComplaintsScreenState extends State<BuyerComplaintsScreen> {
     return snapshot.docs;
   }
 
-  Future<void> _showOrderSelectionDialog(List<QueryDocumentSnapshot> orders) async {
+  Future<void> _showOrderSelectionDialog(List<QueryDocumentSnapshot> orders, User user) async {
     await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -140,7 +178,6 @@ class _BuyerComplaintsScreenState extends State<BuyerComplaintsScreen> {
                     child: Text('Order #${orderId.substring(0, 8)}',
                         style: const TextStyle(fontWeight: FontWeight.bold)),
                   ),
-                  // spread the map result with ...
                   ...items.map((item) {
                     final product = item as Map<String, dynamic>;
                     return ListTile(
@@ -153,10 +190,11 @@ class _BuyerComplaintsScreenState extends State<BuyerComplaintsScreen> {
                         Navigator.pop(ctx);
                         _showComplaintForm(
                           orderId: orderId,
-                          productId: product['id'],
-                          productName: product['name'],
+                          productId: product['id'] ?? '',
+                          productName: product['name'] ?? '',
                           sellerId: sellerId,
                           sellerName: sellerName,
+                          user: user,
                         );
                       },
                     );
@@ -180,6 +218,7 @@ class _BuyerComplaintsScreenState extends State<BuyerComplaintsScreen> {
     required String productName,
     required String sellerId,
     required String sellerName,
+    required User user,
   }) async {
     final issueController = TextEditingController();
     File? issueImage;
@@ -236,15 +275,11 @@ class _BuyerComplaintsScreenState extends State<BuyerComplaintsScreen> {
                     if (issueImage != null) {
                       uploadedImageUrl = await CloudinaryService.uploadImage(issueImage!);
                     }
-                    final user = _currentUser;
+
                     final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-                    final buyerName = (userDoc.data() as Map<String, dynamic>?)?.containsKey('name') == true
-                        ? userDoc.data()!['name']
-                        : user.displayName ?? '';
+                    final buyerName = userDoc.data()?['name'] ?? user.displayName ?? '';
                     final buyerEmail = user.email ?? '';
-                    final buyerPhone = (userDoc.data() as Map<String, dynamic>?)?.containsKey('phone') == true
-                        ? userDoc.data()!['phone']
-                        : '';
+                    final buyerPhone = userDoc.data()?['phone'] ?? '';
 
                     final complaint = ComplaintModel(
                       complaintId: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -268,12 +303,17 @@ class _BuyerComplaintsScreenState extends State<BuyerComplaintsScreen> {
                       await _complaintService.addComplaint(complaint);
                       if (context.mounted) {
                         Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Complaint submitted!')));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Complaint submitted successfully!')),
+                        );
                         setState(() {}); // refresh list
                       }
                     } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                      }
+                    } finally {
                       setModalState(() => isUploading = false);
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
                     }
                   },
                   style: ElevatedButton.styleFrom(

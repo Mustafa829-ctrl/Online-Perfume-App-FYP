@@ -15,12 +15,16 @@ class WishlistScreen extends StatefulWidget {
 
 class _WishlistScreenState extends State<WishlistScreen> {
   final WishlistService _wishlistService = WishlistService();
+
   bool get _isLoggedIn => FirebaseAuth.instance.currentUser != null;
   String? get _userId => FirebaseAuth.instance.currentUser?.uid;
 
   @override
   Widget build(BuildContext context) {
-    return _isLoggedIn ? _buildWishlistContent() : _buildGuestState();
+    if (!_isLoggedIn) {
+      return _buildGuestState();
+    }
+    return _buildWishlistContent();
   }
 
   Widget _buildGuestState() {
@@ -34,18 +38,18 @@ class _WishlistScreenState extends State<WishlistScreen> {
             const SizedBox(height: 16),
             Text(
               'Login to view your wishlist',
-              style: GoogleFonts.poppins(fontSize: 16, color: const Color(0xff5E1D04).withOpacity(0.5), fontWeight: FontWeight.w500),
+              style: GoogleFonts.poppins(fontSize: 18, color: const Color(0xff5E1D04).withOpacity(0.6), fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             Text(
               'Save your favourite fragrances\nand access them anytime',
               textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade400),
+              style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey.shade500),
             ),
             const SizedBox(height: 24),
             SizedBox(
-              width: 180,
-              height: 48,
+              width: 200,
+              height: 50,
               child: ElevatedButton(
                 onPressed: () => Navigator.push(
                   context,
@@ -55,7 +59,8 @@ class _WishlistScreenState extends State<WishlistScreen> {
                   backgroundColor: const Color(0xff5E1D04),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
-                child: Text('Login', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: const Color(0xffD08C4A))),
+                child: Text('Login Now',
+                    style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: const Color(0xffD08C4A))),
               ),
             ),
           ],
@@ -64,6 +69,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
     );
   }
 
+  // Rest of your existing _buildWishlistContent() remains the same
   Widget _buildWishlistContent() {
     return StreamBuilder<List<WishlistItemModel>>(
       stream: _wishlistService.getWishlistStream(_userId!),
@@ -108,7 +114,6 @@ class _WishlistScreenState extends State<WishlistScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Custom header (since parent app bar is fixed)
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
