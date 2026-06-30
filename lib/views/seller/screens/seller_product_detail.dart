@@ -265,12 +265,6 @@ class _SellerProductDetailsScreenState
                   const SizedBox(width: 16),
                   Icon(Icons.shopping_bag_outlined,
                       size: 14, color: Colors.grey.shade500),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${product.totalSold ?? 0} sold',
-                    style: GoogleFonts.poppins(
-                        fontSize: 12, color: Colors.grey.shade500),
-                  ),
                 ]),
                 const SizedBox(height: 20),
 

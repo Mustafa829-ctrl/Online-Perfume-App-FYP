@@ -68,12 +68,12 @@ class _SellerAnalyticsScreenState extends State<SellerAnalyticsScreen> {
       final sellerId = widget.seller.docId ?? '';
 
       final results = await Future.wait([
-        _analytics.getMonthlySales(sellerId),        // [0] monthly sales
-        _analytics.getWeeklySales(sellerId),         // [1] weekly sales
-        _analytics.getDailySales(sellerId),          // [2] daily sales
-        _analytics.getTopSellingProducts(sellerId),  // [3] top products
-        _analytics.getProfitLossSummary(sellerId),   // [4] P&L summary
-        _analytics.getYearlyProfitLoss(sellerId),    // [5] yearly P&L
+        _analytics.getMonthlySales(sellerId),
+        _analytics.getWeeklySales(sellerId),
+        _analytics.getDailySales(sellerId),
+        _analytics.getTopSellingProducts(sellerId),
+        _analytics.getProfitLossSummary(sellerId),
+        _analytics.getYearlyProfitLoss(sellerId),
       ]);
 
       totalSales    = (results[0] as double);
@@ -276,18 +276,28 @@ class _SellerAnalyticsScreenState extends State<SellerAnalyticsScreen> {
                       const SizedBox(height: 16),
                       Divider(color: Colors.grey.shade200),
                       const SizedBox(height: 12),
-                      _PLRow(label: 'Total Revenue',  value: 'Rs ${_formatAmount(currentPL['revenue'] as int)}',  color: const Color(0xff66BB6A), icon: Icons.arrow_upward),
+                      _PLRow(label: 'Total Revenue',  value: 'Rs ${_formatAmount(currentPL['revenue'] as int)}',
+                          color: const Color(0xff66BB6A),
+                          icon: Icons.arrow_upward),
                       const SizedBox(height: 10),
-                      _PLRow(label: 'Total Expenses', value: 'Rs ${_formatAmount(currentPL['expenses'] as int)}', color: const Color(0xffEF5350), icon: Icons.arrow_downward),
+                      _PLRow(label: 'Total Expenses', value: 'Rs ${_formatAmount(currentPL['expenses'] as int)}',
+                          color: const Color(0xffEF5350),
+                          icon: Icons.arrow_downward),
                     ]),
                   ),
                   const SizedBox(height: 24),
 
                   // Top Selling Products
-                  Text('Top Selling Products', style: GoogleFonts.playfairDisplay(fontSize: 17, fontWeight: FontWeight.bold, color: const Color(0xff5E1D04))),
+                  Text('Top Selling Products', style: GoogleFonts.playfairDisplay(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xff5E1D04))),
                   const SizedBox(height: 12),
                   topProducts.isEmpty
-                      ? Center(child: Padding(padding: const EdgeInsets.all(20), child: Text('No products yet', style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade400))))
+                      ? Center(child: Padding(padding: const EdgeInsets.all(20),
+                      child: Text('No products yet', style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          color: Colors.grey.shade400))))
                       : Column(children: topProducts.asMap().entries.map((e) => _TopProductTile(rank: e.key + 1, product: e.value)).toList()),
                   const SizedBox(height: 30),
                 ],
@@ -379,11 +389,19 @@ class _PLRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
       Row(children: [
-        Container(width: 28, height: 28, decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(8)), child: Icon(icon, color: color, size: 16)),
+        Container(width: 28, height: 28, decoration: BoxDecoration(
+            color: color.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(8)),
+            child: Icon(icon, color: color, size: 16)),
         const SizedBox(width: 10),
-        Text(label, style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade600)),
+        Text(label, style: GoogleFonts.poppins(
+            fontSize: 13,
+            color: Colors.grey.shade600)),
       ]),
-      Text(value, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: color)),
+      Text(value, style: GoogleFonts.poppins(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: color)),
     ]);
   }
 }
@@ -399,16 +417,32 @@ class _TopProductTile extends StatelessWidget {
       decoration: BoxDecoration(color: const Color(0xFFF9F9F9), borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFFEEEEEE))),
       child: Row(children: [
         Container(width: 32, height: 32,
-          decoration: BoxDecoration(color: rank == 1 ? const Color(0xffD08C4A) : rank == 2 ? const Color(0xFFB0BEC5) : rank == 3 ? const Color(0xFFBCAAA4) : const Color(0xFFF9F9F9), borderRadius: BorderRadius.circular(8), border: rank > 3 ? Border.all(color: const Color(0xFFEEEEEE)) : null),
-          child: Center(child: Text('#$rank', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: rank <= 3 ? Colors.white : Colors.grey.shade500)))),
+          decoration: BoxDecoration(
+              color: rank == 1 ? const Color(0xffD08C4A) :
+              rank == 2 ? const Color(0xFFB0BEC5) :
+              rank == 3 ? const Color(0xFFBCAAA4) :
+              const Color(0xFFF9F9F9),
+              borderRadius: BorderRadius.circular(8),
+              border: rank > 3 ? Border.all(color: const Color(0xFFEEEEEE)) : null),
+          child: Center(child: Text('#$rank', style: GoogleFonts.poppins(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: rank <= 3 ? Colors.white : Colors.grey.shade500)))),
         const SizedBox(width: 12),
-        Container(width: 42, height: 42, decoration: BoxDecoration(color: const Color(0xFFFFF3CD), borderRadius: BorderRadius.circular(10)), child: const Icon(Icons.local_florist_outlined, color: Color(0xffD08C4A), size: 22)),
+        Container(width: 42, height: 42, decoration: BoxDecoration(
+            color: const Color(0xFFFFF3CD),
+            borderRadius: BorderRadius.circular(10)),
+            child: const Icon(Icons.local_florist_outlined,
+                color: Color(0xffD08C4A), size: 22)),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(product['name'], style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xff5E1D04))),
-          Text('${product['sold']} sold • ${product['category']}', style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade500)),
+          Text(product['name'], style: GoogleFonts.poppins(
+              fontSize: 13, fontWeight: FontWeight.w600,
+              color: const Color(0xff5E1D04))),
         ])),
-        Text(product['revenue'], style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xff5E1D04))),
+        Text(product['revenue'], style: GoogleFonts.poppins(
+            fontSize: 12, fontWeight: FontWeight.bold,
+            color: const Color(0xff5E1D04))),
       ]),
     );
   }

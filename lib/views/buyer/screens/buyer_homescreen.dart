@@ -41,7 +41,6 @@ class _BuyerHomescreenState extends State<BuyerHomescreen> {
   Stream<int> get _cartCountStream {
     final user = _currentUser;
     if (user == null) return Stream.value(0);
-
     return FirebaseFirestore.instance
         .collection('carts')
         .doc(user.uid)
@@ -65,6 +64,7 @@ class _BuyerHomescreenState extends State<BuyerHomescreen> {
   Future<void> _fetchLiveHomeData() async {
     await Future.wait([_loadFirestoreCategories(), _loadFirestoreProducts()]);
   }
+
 
   Future<void> _loadFirestoreCategories() async {
     try {

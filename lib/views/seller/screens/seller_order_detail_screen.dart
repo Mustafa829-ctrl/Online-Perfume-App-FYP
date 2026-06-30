@@ -836,7 +836,7 @@ class _OrderTimeline extends StatelessWidget {
   final String currentStatus;
   const _OrderTimeline({required this.currentStatus});
 
-  static const List<String> _steps = ['Pending', 'Processing', 'Dispatched', 'Delivered'];
+  static const List<String> _steps = ['Pending', 'Processing', "Dispatched", 'Delivered'];
 
   bool _isCompleted(String step) {
     final ci = _steps.indexOf(currentStatus);

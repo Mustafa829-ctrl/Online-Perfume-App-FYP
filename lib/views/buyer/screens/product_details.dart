@@ -38,7 +38,7 @@ class _ProductDetailsState extends State<ProductDetails> {
   // ── Loading states
   bool _isAddingToCart  = false;
   bool _isLoadingReviews = false;
-  bool _hasOrdered      = false; // whether buyer has delivered order for this product
+  bool _hasOrdered      = false;
 
   // ── Reviews
   List<ReviewModel> _reviews = [];
@@ -178,8 +178,18 @@ class _ProductDetailsState extends State<ProductDetails> {
             action: SnackBarAction(
               label: 'View Cart',
               textColor: const Color(0xff5E1D04),
-              onPressed: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const CartScreen())),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => Scaffold(
+                    appBar: AppBar(
+                      title: Text('Shopping Cart'),
+                      backgroundColor: const Color(0xffD08C4A),
+                    ),
+                    body: CartScreen(),
+                  ),
+                ),
+              ),
             ),
           ),
         );

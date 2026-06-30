@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:online_perfume_app_fyp/models/admin_model.dart';
@@ -26,20 +27,21 @@ class AdminHomeScreen extends StatefulWidget {
 }
 
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
-  // Service
   final AdminService _adminService = AdminService();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // State for dashboard stats
   bool isStatsLoading = false;
   Map<String, int> stats = {
-    'totalSellers':         0,
-    'totalBuyers':          0,
-    'totalRiders':          0,
-    'totalOrders':          0,
-    'totalProducts':        0,
-    'pendingComplaints':    0,
+    'totalSellers': 0,
+    'totalBuyers': 0,
+    'totalRiders': 0,
+    'totalUsers': 0,
+    'blockedUsers': 0,
+    'totalOrders': 0,
+    'totalProducts': 0,
+    'pendingComplaints': 0,
     'pendingVerifications': 0,
-    'issuedOrders':         0,
+    'issuedOrders': 0,
   };
 
   @override
@@ -48,55 +50,74 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     loadStats();
   }
 
-  // Load dashboard stats
+  // ─── Load all dashboard stats
   Future<void> loadStats() async {
     try {
       isStatsLoading = true;
       setState(() {});
 
-      stats = await _adminService.getDashboardStats();
+      // ── 1. Count users from each collection ──
+      final results = await Future.wait([
+        _firestore.collection('users').count().get(),
+        _firestore.collection('sellers').count().get(),
+        _firestore.collection('riders').count().get(),
+        _firestore.collection('users').where('isBlocked', isEqualTo: true).count().get(),
+        _firestore.collection('sellers').where('isBlocked', isEqualTo: true).count().get(),
+        _firestore.collection('riders').where('isBlocked', isEqualTo: true).count().get(),
+      ]);
 
-      isStatsLoading = false;
-      setState(() {});
+      final totalBuyers   = results[0].count ?? 0;
+      final totalSellers  = results[1].count ?? 0;
+      final totalRiders   = results[2].count ?? 0;
+      final blockedBuyers = results[3].count ?? 0;
+      final blockedSellers= results[4].count ?? 0;
+      final blockedRiders = results[5].count ?? 0;
+
+      final totalUsers  = totalBuyers + totalSellers + totalRiders;
+      final blockedUsers = blockedBuyers + blockedSellers + blockedRiders;
+
+      // ── 2. Other stats from AdminService ──
+      final adminStats = await _adminService.getDashboardStats();
+
+      setState(() {
+        stats['totalBuyers']  = totalBuyers;
+        stats['totalSellers'] = totalSellers;
+        stats['totalRiders']  = totalRiders;
+        stats['totalUsers']   = totalUsers;
+        stats['blockedUsers'] = blockedUsers;
+        stats['totalOrders']  = adminStats['totalOrders'] ?? 0;
+        stats['totalProducts']= adminStats['totalProducts'] ?? 0;
+        stats['pendingComplaints'] = adminStats['pendingComplaints'] ?? 0;
+        stats['pendingVerifications'] = adminStats['pendingVerifications'] ?? 0;
+        stats['issuedOrders'] = adminStats['issuedOrders'] ?? 0;
+        isStatsLoading = false;
+      });
     } catch (e) {
       isStatsLoading = false;
       setState(() {});
     }
   }
 
-  // Format number for display
   String _formatCount(int count) {
-    if (count >= 1000) {
-      return '${(count / 1000).toStringAsFixed(1)}k';
-    }
+    if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}k';
     return count.toString();
   }
 
-  // Complaint status colors
   Map<String, Color> _complaintStatusColors(String? status) {
     switch (status) {
-      case 'Pending':
-        return {'bg': const Color(0xFFF8D7DA), 'text': const Color(0xFF721C24)};
-      case 'In Progress':
-        return {'bg': const Color(0xFFE3F2FD), 'text': const Color(0xff42A5F5)};
-      case 'Resolved':
-        return {'bg': const Color(0xFFE8F5E9), 'text': const Color(0xff66BB6A)};
-      default:
-        return {'bg': const Color(0xFFF5F5F5), 'text': Colors.grey};
+      case 'Pending': return {'bg': const Color(0xFFF8D7DA), 'text': const Color(0xFF721C24)};
+      case 'In Progress': return {'bg': const Color(0xFFE3F2FD), 'text': const Color(0xff42A5F5)};
+      case 'Resolved': return {'bg': const Color(0xFFE8F5E9), 'text': const Color(0xff66BB6A)};
+      default: return {'bg': const Color(0xFFF5F5F5), 'text': Colors.grey};
     }
   }
 
-  // Order status colors
   Map<String, Color> _orderStatusColors(String? status) {
     switch (status) {
-      case 'Not Delivered':
-        return {'bg': const Color(0xFFFCE4EC), 'text': const Color(0xffEF5350)};
-      case 'Cancelled':
-        return {'bg': const Color(0xFFF8D7DA), 'text': const Color(0xFF721C24)};
-      case 'Returned':
-        return {'bg': const Color(0xFFFFF3CD), 'text': const Color(0xffFFA726)};
-      default:
-        return {'bg': const Color(0xFFF5F5F5), 'text': Colors.grey};
+      case 'Not Delivered': return {'bg': const Color(0xFFFCE4EC), 'text': const Color(0xffEF5350)};
+      case 'Cancelled': return {'bg': const Color(0xFFF8D7DA), 'text': const Color(0xFF721C24)};
+      case 'Returned': return {'bg': const Color(0xFFFFF3CD), 'text': const Color(0xffFFA726)};
+      default: return {'bg': const Color(0xFFF5F5F5), 'text': Colors.grey};
     }
   }
 
@@ -135,110 +156,103 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             children: [
               const SizedBox(height: 10),
 
-              // ── Overview Stat Cards
+              // ── Overview Stat Cards ──
               const SectionTitle(title: 'Overview'),
               const SizedBox(height: 12),
               isStatsLoading
                   ? const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(20),
-                        child: CircularProgressIndicator(
-                            color: Color(0xffD08C4A)),
-                      ),
-                    )
+                child: Padding(
+                  padding: EdgeInsets.all(20),
+                  child: CircularProgressIndicator(color: Color(0xffD08C4A)),
+                ),
+              )
                   : GridView.count(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 2.4,
-                      children: [
-                        _TappableStatCard(
-                          label: 'Total Users',
-                          value: _formatCount(stats['totalBuyers'] ?? 0),
-                          icon: Icons.people_outline,
-                          onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) =>
-                                      const AdminUserListScreen())),
-                        ),
-                        _TappableStatCard(
-                          label: 'Total Sellers',
-                          value: _formatCount(stats['totalSellers'] ?? 0),
-                          icon: Icons.store_outlined,
-                          onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) =>
-                                      const AdminSellerListScreen())),
-                        ),
-                        _TappableStatCard(
-                          label: 'Total Riders',
-                          value: _formatCount(stats['totalRiders'] ?? 0),
-                          icon: Icons.delivery_dining_outlined,
-                          onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) =>
-                                      const AdminRiderListScreen())),
-                        ),
-                        _TappableStatCard(
-                          label: 'Blocked Users',
-                          value: _formatCount(stats['totalOrders'] ?? 0),
-                          icon: Icons.block_outlined,
-                          onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const AdminUserListScreen(
-                                      initialFilter: 'Blocked'))),
-                        ),
-                        // ── Live badge: pending complaints
-                        StreamBuilder<int>(
-                          stream:
-                              _adminService.pendingComplaintsStream(),
-                          builder: (context, snapshot) {
-                            final count = snapshot.data ?? 0;
-                            return _TappableStatCard(
-                              label: 'Pending Complaints',
-                              value: _formatCount(count),
-                              icon: Icons.report_outlined,
-                              onTap: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) =>
-                                          const AdminComplaintListScreen(
-                                              initialFilter: 'Pending'))),
-                            );
-                          },
-                        ),
-                        // ── Live badge: flagged orders
-                        _TappableStatCard(
-                          label: 'Flagged Orders',
-                          value: _formatCount(stats['issuedOrders'] ?? 0),
-                          icon: Icons.warning_amber_outlined,
-                          onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) =>
-                                      const AdminOrderListScreen())),
-                        ),
-                      ],
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 2.4,
+                children: [
+                  _TappableStatCard(
+                    label: 'Total Users',
+                    value: _formatCount(stats['totalUsers'] ?? 0),
+                    icon: Icons.people_outline,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AdminUserListScreen()),
                     ),
+                  ),
+                  _TappableStatCard(
+                    label: 'Total Sellers',
+                    value: _formatCount(stats['totalSellers'] ?? 0),
+                    icon: Icons.store_outlined,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AdminSellerListScreen()),
+                    ),
+                  ),
+                  _TappableStatCard(
+                    label: 'Total Riders',
+                    value: _formatCount(stats['totalRiders'] ?? 0),
+                    icon: Icons.delivery_dining_outlined,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AdminRiderListScreen()),
+                    ),
+                  ),
+                  _TappableStatCard(
+                    label: 'Blocked Users',
+                    value: _formatCount(stats['blockedUsers'] ?? 0),
+                    icon: Icons.block_outlined,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AdminUserListScreen(initialFilter: 'Blocked'),
+                      ),
+                    ),
+                  ),
+                  // ── Live badge: pending complaints ──
+                  StreamBuilder<int>(
+                    stream: _adminService.pendingComplaintsStream(),
+                    builder: (context, snapshot) {
+                      final count = snapshot.data ?? 0;
+                      return _TappableStatCard(
+                        label: 'Pending Complaints',
+                        value: _formatCount(count),
+                        icon: Icons.report_outlined,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AdminComplaintListScreen(initialFilter: 'Pending'),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  _TappableStatCard(
+                    label: 'Flagged Orders',
+                    value: _formatCount(stats['issuedOrders'] ?? 0),
+                    icon: Icons.warning_amber_outlined,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AdminOrderListScreen()),
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 24),
 
-              // ── Recent Complaints — StreamBuilder (live)
+              // ── Recent Complaints ──
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const SectionTitle(title: 'Recent Complaints'),
                   GestureDetector(
                     onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) =>
-                                const AdminComplaintListScreen())),
+                      context,
+                      MaterialPageRoute(builder: (_) => const AdminComplaintListScreen()),
+                    ),
                     child: Text(
                       'View All',
                       style: GoogleFonts.poppins(
@@ -254,25 +268,18 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               StreamBuilder<List<ComplaintModel>>(
                 stream: _adminService.complaintsStream(),
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState ==
-                      ConnectionState.waiting) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(
-                      child: CircularProgressIndicator(
-                          color: Color(0xffD08C4A)),
+                      child: CircularProgressIndicator(color: Color(0xffD08C4A)),
                     );
                   }
                   if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return _EmptyState(
-                      icon: Icons.report_outlined,
-                      message: 'No complaints yet',
-                    );
+                    return _EmptyState(icon: Icons.report_outlined, message: 'No complaints yet');
                   }
-                  // Show only latest 2
                   final complaints = snapshot.data!.take(2).toList();
                   return Column(
                     children: complaints.map((complaint) {
-                      final colors =
-                          _complaintStatusColors(complaint.status);
+                      final colors = _complaintStatusColors(complaint.status);
                       return _RecentComplaintTile(
                         complaint: complaint,
                         statusBgColor: colors['bg']!,
@@ -280,9 +287,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => AdminComplaintDetailScreen(
-                              complaint: complaint,
-                            ),
+                            builder: (_) => AdminComplaintDetailScreen(complaint: complaint),
                           ),
                         ),
                       );
@@ -292,16 +297,16 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               ),
               const SizedBox(height: 24),
 
-              // ── Flagged Orders — StreamBuilder (live)
+              // ── Flagged Orders ──
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const SectionTitle(title: 'Flagged Orders'),
                   GestureDetector(
                     onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const AdminOrderListScreen())),
+                      context,
+                      MaterialPageRoute(builder: (_) => const AdminOrderListScreen()),
+                    ),
                     child: Text(
                       'View All',
                       style: GoogleFonts.poppins(
@@ -317,25 +322,18 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               StreamBuilder<List<OrderModel>>(
                 stream: _adminService.issuedOrdersStream(),
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState ==
-                      ConnectionState.waiting) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(
-                      child: CircularProgressIndicator(
-                          color: Color(0xffD08C4A)),
+                      child: CircularProgressIndicator(color: Color(0xffD08C4A)),
                     );
                   }
                   if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return _EmptyState(
-                      icon: Icons.warning_amber_outlined,
-                      message: 'No flagged orders',
-                    );
+                    return _EmptyState(icon: Icons.warning_amber_outlined, message: 'No flagged orders');
                   }
-                  // Show only latest 2
                   final orders = snapshot.data!.take(2).toList();
                   return Column(
                     children: orders.map((order) {
-                      final colors =
-                          _orderStatusColors(order.status);
+                      final colors = _orderStatusColors(order.status);
                       return _RecentOrderTile(
                         order: order,
                         statusBgColor: colors['bg']!,
@@ -343,8 +341,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) =>
-                                AdminOrderDetailScreen(order: order),
+                            builder: (_) => AdminOrderDetailScreen(order: order),
                           ),
                         ),
                       );
@@ -354,17 +351,18 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               ),
               const SizedBox(height: 24),
 
-              // ── Pending Verifications — StreamBuilder (live)
+              // ── Pending Verifications ──
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const SectionTitle(title: 'Pending Verifications'),
                   GestureDetector(
                     onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const AdminSellerListScreen(
-                                initialFilter: 'Unverified'))),
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AdminSellerListScreen(initialFilter: 'Unverified'),
+                      ),
+                    ),
                     child: Text(
                       'View All',
                       style: GoogleFonts.poppins(
@@ -380,48 +378,33 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               StreamBuilder<List<SellerModel>>(
                 stream: _adminService.sellersStream(),
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState ==
-                      ConnectionState.waiting) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(
-                      child: CircularProgressIndicator(
-                          color: Color(0xffD08C4A)),
+                      child: CircularProgressIndicator(color: Color(0xffD08C4A)),
                     );
                   }
                   if (!snapshot.hasData) {
-                    return _EmptyState(
-                      icon: Icons.store_outlined,
-                      message: 'No pending verifications',
-                    );
+                    return _EmptyState(icon: Icons.store_outlined, message: 'No pending verifications');
                   }
-                  // Filter unverified sellers
                   final unverified = snapshot.data!
-                      .where((s) =>
-                          (s.isVerified == false) &&
-                          (s.isBlocked == false))
+                      .where((s) => (s.isVerified == false) && (s.isBlocked == false))
                       .take(2)
                       .toList();
 
                   if (unverified.isEmpty) {
-                    return _EmptyState(
-                      icon: Icons.store_outlined,
-                      message: 'No pending verifications',
-                    );
+                    return _EmptyState(icon: Icons.store_outlined, message: 'No pending verifications');
                   }
 
                   return Column(
-                    children: unverified
-                        .map((seller) => _UnverifiedSellerTile(
-                              seller: seller,
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      AdminSellerDetailScreen(
-                                          seller: seller),
-                                ),
-                              ),
-                            ))
-                        .toList(),
+                    children: unverified.map((seller) => _UnverifiedSellerTile(
+                      seller: seller,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => AdminSellerDetailScreen(seller: seller),
+                        ),
+                      ),
+                    )).toList(),
                   );
                 },
               ),
@@ -433,6 +416,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 }
+
+
+//  Helper Widgets
 
 // ── Tappable Stat Card
 class _TappableStatCard extends StatelessWidget {
@@ -453,8 +439,7 @@ class _TappableStatCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: const Color(0xFFFFF3CD),
           borderRadius: BorderRadius.circular(12),
@@ -606,8 +591,7 @@ class _RecentOrderTile extends StatelessWidget {
                 color: const Color(0xFFFFF3CD),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.shopping_bag_outlined,
-                  color: Color(0xffD08C4A), size: 22),
+              child: const Icon(Icons.shopping_bag_outlined, color: Color(0xffD08C4A), size: 22),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -735,8 +719,7 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               message,
-              style: GoogleFonts.poppins(
-                  fontSize: 13, color: Colors.grey.shade400),
+              style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade400),
             ),
           ],
         ),

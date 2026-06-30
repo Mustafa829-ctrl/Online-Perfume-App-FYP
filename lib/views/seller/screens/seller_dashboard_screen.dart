@@ -92,7 +92,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
     }).length;
   }
 
-  /// ✅ Fixed field names: 'quantity' → 'stock'
+  ///
   Future<void> _loadProductStats(String sellerId) async {
     QuerySnapshot snap = await _firestore
         .collection('products')
@@ -328,9 +328,22 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
               children: [
                 _SectionTitle(title: 'Recent Orders'),
                 GestureDetector(
-                  onTap: () => Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => SellerOrdersScreen(seller: widget.seller))),
-                  child: Text('View All', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xffD08C4A))),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => Scaffold(
+                        appBar: AppBar(
+                          title: Text('All Orders'),
+                          backgroundColor: const Color(0xffD08C4A),
+                        ),
+                        body: SellerOrdersScreen(seller: widget.seller),
+                      ),
+                    ),
+                  ),
+                  child: Text('View All', style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xffD08C4A))),
                 ),
               ],
             ),

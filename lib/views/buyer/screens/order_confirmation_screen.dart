@@ -28,7 +28,7 @@ class OrderConfirmationScreen extends StatefulWidget {
 class _OrderConfirmationScreenState extends State<OrderConfirmationScreen>
     with SingleTickerProviderStateMixin {
   final OrderService _orderService = OrderService();
-  static const int _cancelWindowSeconds = 01 * 60;
+  static const int _cancelWindowSeconds = 1 * 60;
 
   String get _formattedTime {
     final minutes = _remainingSeconds ~/ 60;

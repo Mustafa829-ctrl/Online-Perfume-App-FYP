@@ -19,7 +19,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   final OrderService _orderService = OrderService();
   final ProductService _productService = ProductService();
 
-  static const int _cancelWindowSeconds = 15 * 60;
+  static const int _cancelWindowSeconds = 1 * 60;
 
   late OrderModel _order;
   bool isUpdating = false;
